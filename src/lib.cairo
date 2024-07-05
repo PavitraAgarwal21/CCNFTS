@@ -1,1 +1,2 @@
-mod chess ; 
+mod Chess ; 
+
