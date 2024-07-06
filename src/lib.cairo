@@ -1,4 +1,6 @@
+use core::array::ArrayTrait;
 use alexandria_math::{U128BitShift, U256BitShift}; 
+
 // let val = U256BitShift::shl(vale, 3); // right shift  multiply << 128 
 // let valr =U256BitShift::shr(vale, 3); // left shift  divison >>  2
 #[derive(Drop)] 
@@ -8,8 +10,8 @@ struct Move {
 }
 #[derive(Drop)] 
 struct MoveArray {
-    index : u256 , 
-    items : u256 , 
+    index : u32 ,
+     items :  Array<u256>,  
 }
 const max_u256 : u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; 
 
@@ -60,20 +62,64 @@ fn generateMoves(_board : u256 )  {
 
     let mut move : u256  = 0 ; 
     let mut moveTo : u256 = 0 ; 
-
     let mut index : u256 = 0xDB5D33CB1BADB2BAA99A59238A179D71B69959551349138D30B289 ;
     loop {
-        if index == 0 {
-            break ; 
+        if index == 0 {break ;}
+        let mut adjustedIndex = index & 0x3F ;  
+        let mut adjustedBoard = U256BitShift::shr(_board , U256BitShift::shl(adjustedIndex,2))  ;
+        let mut piece = adjustedBoard & 0xF ; 
+    // println!("piece {}" , piece);
+    //    println!("last bit of the board {}",U256BitShift::shr(piece,3));
+    //    println!("last {} ", _board& 1);
+        // if the piece is empty or the piece is not the same as the current player
+        if (piece == 0 ||   U256BitShift::shr(piece,3) != _board & 1)   {
+            index = U256BitShift::shr(index, 6); 
+            continue;
+        }  
+        /// remove the player bit  0111 & 
+         piece = piece & 0x7 ; 
+         ///// means it is pawn 
+        if (piece == 1) { 
+            /// if the front row is empty or not 
+            if (U256BitShift::shr(adjustedBoard,0x20)&0xF == 0 ) {
+                // println!("adjusted board {}" , U256BitShift::shr(adjustedBoard , 0x20)&0xf );
+                // println!("pawn front empty {}" , piece)  ;
+                // println!("pawn from{}",adjustedIndex  ) ;
+                // println!("pawn to {}",adjustedIndex + 8 ) ; 
+                /// move the pawn to the 2 row head 
+                /// means it is in his 2 row starting point and can move 2 steps and that place is empty 
+                if ( (U256BitShift::shr(adjustedIndex , 3) == 2) && (U256BitShift::shr(adjustedBoard,0x40)&0xF == 0) ) {
+                    // println!("pawn from{}",adjustedIndex  ) ;
+                    // println!("pawn to {}",adjustedIndex + 0x10 ) ; 
+                }  
+            }
+            /// capture the piece to the left diagonal of it  
+                if (isCapture(_board , U256BitShift::shr(adjustedBoard,0x1C))) {
+                ///append to the moves 
+                println!("pawn from{}",adjustedIndex  ) ;
+                println!("pawn to {}",adjustedIndex + 7  ) ;
+            }
+            //// capture the piece to the right diagonal of it 
+            if (isCapture(_board , U256BitShift::shr(adjustedBoard,0x24))) {
+                ///append to the moves 
+                println!("pawn from{}",adjustedIndex  ) ;
+                println!("pawn to {}",adjustedIndex + 9  ) ;
+            }
+
+        } 
+
+        /// if piece is knight(horse) or king 
+        else if (piece&0x7 == 4 || piece&0x7 == 6) {
+            let mut piece = adjustedBoard & 0xF ;  
+            println!("piece {}" , piece) ;
+            println!("adjusted board {}" , adjustedIndex ) ;
+
         }
 
-        let adjustedIndex = index & 0x3F ;  
-        let adjustedBoard = U256BitShift::shr(_board , U256BitShift::shl(adjustedIndex,2))  ;
-        let piece = adjustedBoard & 0xF ; 
-        println!("{}",piece);
 
-    index = U256BitShift::shr(index, 6); 
-    
+
+
+        index = U256BitShift::shr(index, 6); 
     }
 
 }
@@ -85,10 +131,62 @@ fn generateMoves(_board : u256 )  {
 
 
 
+
+fn isCapture(_board : u256 , _indexAdjustedBoard : u256 ) -> bool {
+  /// exp the square you want to caputure is not empty and the piece is not the same as the current player
+    return (
+       (_indexAdjustedBoard & 0xf != 0) && ( U256BitShift::shr(_indexAdjustedBoard & 0xf, 3) != _board&1 )
+    ) ; 
+}
+
+
+fn isValid(_toIndex : u256  , _board : u256 ) -> bool { 
+    return (
+        U256BitShift::shr(0x7E7E7E7E7E7E00 , _toIndex) & 1 == 1 // move must be with in the bounds 
+        && (U256BitShift::shr(_board , U256BitShift::shl(_toIndex ,2 ))) == 0 // the to index must be empty
+        ||   U256BitShift::shr(U256BitShift::shr(_board , U256BitShift::shl(_toIndex , 2)) & 0xf , 3) != _board &1    ///piece is the opposite contester 
+    ) ; 
+}
+fn appendTo(mut _moveArray : MoveArray , _fromMoveIndex : u256 , _toMoveIndex : u256 ) -> bool {
+
+    let mut currentIndex   = _moveArray.index ; 
+    let currentPartition : u256  = *_moveArray.items.at(currentIndex); 
+    let val : u256 = U256BitShift::shl(1,0xF6)  ; 
+    if (currentPartition > val ) {
+        let val  : u256 = U256BitShift::shr(_fromMoveIndex , 6) | _toMoveIndex ; 
+        
+        
+        // _moveArray.*items.at(++_moveArray.index) = currentIndex + 1 ;
+
+    } else {
+
+    }
+
+    return true ;
+}
+#[derive(Drop)]
+struct mmm { 
+    a : u256 , 
+    b : Array<u256>, 
+} 
+fn working_with_array () 
+{ 
+    let mut mm = mmm {
+        a : 12 , 
+        b : ArrayTrait::<u256>::new() , 
+    };
+    mm.b.append(12);
+    println!("{:?}" , mm.b);
+}
+
+
+
 fn main()  {
     let vale : u256 = 16 ; 
     let val = U256BitShift::shl(vale, 3); // right shift  division  >>
     let valr =U256BitShift::shr(vale, 3); // left shift  multiply << 
+    /// working with the array 
+    working_with_array() ;
     // println!("{}" , valr );
     // println!("{}" , max_u256);
     //apply move
@@ -97,7 +195,7 @@ fn main()  {
     // rotate 
     // let new_board = rotate(0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF ) ; 
     // println!("new12 {}", new_board) ;
-    generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001) ;
+    // generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001) ;
 }
 
 
