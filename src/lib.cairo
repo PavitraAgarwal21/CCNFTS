@@ -1,6 +1,7 @@
 use core::array::ArrayTrait;
 use alexandria_math::{U128BitShift, U256BitShift}; 
-
+// use alexandria_data_structures::vec::{VecTrait, Felt252Vec}; 
+use alexandria_data_structures::vec::{VecTrait , Felt252Vec}; 
 // let val = U256BitShift::shl(vale, 3); // right shift  multiply << 128 
 // let valr =U256BitShift::shr(vale, 3); // left shift  divison >>  2
 #[derive(Drop)] 
@@ -125,6 +126,92 @@ fn generateMoves(_board : u256 )  {
 }
 
 
+fn isLegalMove(_board : u256  , _move : u256 ) -> bool {
+
+let fromIndex :u256 = U256BitShift::shr(_move, 6) ;
+let toIndex : u256 = _move & 0x3F ;
+if (U256BitShift::shr(0x7E7E7E7E7E7E00,fromIndex)&1==0) {return false ;}
+if (U256BitShift::shr(0x7E7E7E7E7E7E00,toIndex)&1==1) {return false ;}
+
+let mut pieceAtFromIndex : u256 = U256BitShift::shr(_board, U256BitShift::shl(fromIndex,2)) & 0xF ;
+if (pieceAtFromIndex == 0) {return false ;}
+if (U256BitShift::shr(pieceAtFromIndex,3) != _board & 1) {return false ;} 
+pieceAtFromIndex = pieceAtFromIndex & 0x7 ;
+
+let adjustedBoard = U256BitShift::shr(_board, U256BitShift::shl(toIndex,2)) ;
+let mut indexChange : u256 = if toIndex < fromIndex { fromIndex - toIndex  } else {  toIndex - fromIndex };
+if (pieceAtFromIndex == 1) {
+    if(toIndex <= fromIndex) {return false ;}
+    indexChange = toIndex - fromIndex ;
+    if (indexChange == 7 || indexChange == 9 ) {
+        if (!isCapture(_board, adjustedBoard)) {return false ;}
+    } else if(indexChange == 8) { 
+        if (!isValid(_board , toIndex)) { return false ;}
+    } else if (indexChange == 0x10) {
+        if (!isValid(_board ,  toIndex -8  ) || !isValid(_board , toIndex )) { return false ;}
+    } else {
+        return false ; 
+    }
+} else  if  (pieceAtFromIndex == 4 || pieceAtFromIndex == 6 ) {
+    if (  U256BitShift::shr(if pieceAtFromIndex == 4 {0x28440 } else {0x382} , indexChange)&1 == 0  ) {return false ; }
+if (!isValid(_board , toIndex )) {return false ; }  
+} else {
+    let mut rayFound : bool = false ;
+    if (pieceAtFromIndex != 2 ) {
+        if (pieceAtFromIndex != 2 ) {
+            rayFound = searchRay(_board , fromIndex , toIndex , 1 ) || searchRay(_board , fromIndex , toIndex , 8 ) ; 
+        } 
+    }
+        if (pieceAtFromIndex != 3 ) {
+            rayFound = rayFound || searchRay(_board , fromIndex  , toIndex , 7 ) 
+            || searchRay(_board , fromIndex , toIndex , 9 ) ;
+        }
+        if (!rayFound ) {return false ; }  
+    } 
+
+   // if (Engine.negaMax(_board.applyMove(_move), 1) < -1_260) return false;
+
+return true ;
+
+}
+
+
+
+fn searchRay (_board : u256 , _fromIndex : u256 , _toIndex : u256 , _directionVector  : u256 ) -> bool { 
+    let mut indexChange : u256 = 0 ; 
+    let mut rayStart : u256 = 0 ; 
+    let mut rayEnd : u256 = 0  ;  
+    if (_fromIndex < _toIndex ) {
+        indexChange = _toIndex - _fromIndex ; 
+        rayStart = _fromIndex + _directionVector; 
+        rayEnd = _toIndex ; 
+    } else {
+        indexChange = _fromIndex - _toIndex ; 
+        rayStart = _toIndex ; 
+        rayEnd = _fromIndex  - _directionVector;  
+    } 
+    if (indexChange % _directionVector != 0 ) {return false ;}   
+
+    let mut rayStart = rayStart ; 
+    let mut flag : bool = false ;  
+
+    loop {
+        if (rayStart >=  rayEnd) {break ;}
+if (!isValid(_board , rayStart)) {
+    flag = true; 
+    break ; 
+} 
+if (isCapture(_board , U256BitShift::shr(_board , U256BitShift::shl(rayStart , 2)))) {
+    flag = true ; 
+    break ; 
+}
+rayStart = rayStart + _directionVector  ; 
+
+    };
+    if flag {return false ;} 
+
+return rayStart == rayEnd ; 
+}
 
 
 
@@ -155,7 +242,6 @@ fn appendTo(mut _moveArray : MoveArray , _fromMoveIndex : u256 , _toMoveIndex : 
     if (currentPartition > val ) {
         let val  : u256 = U256BitShift::shr(_fromMoveIndex , 6) | _toMoveIndex ; 
         
-        
         // _moveArray.*items.at(++_moveArray.index) = currentIndex + 1 ;
 
     } else {
@@ -176,7 +262,11 @@ fn working_with_array ()
         b : ArrayTrait::<u256>::new() , 
     };
     mm.b.append(12);
-    println!("{:?}" , mm.b);
+    // println!("{:?}" , mm.b);
+
+
+
+
 }
 
 
@@ -186,7 +276,7 @@ fn main()  {
     let val = U256BitShift::shl(vale, 3); // right shift  division  >>
     let valr =U256BitShift::shr(vale, 3); // left shift  multiply << 
     /// working with the array 
-    working_with_array() ;
+    // working_with_array() ;
     // println!("{}" , valr );
     // println!("{}" , max_u256);
     //apply move
@@ -195,7 +285,12 @@ fn main()  {
     // rotate 
     // let new_board = rotate(0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF ) ; 
     // println!("new12 {}", new_board) ;
-    // generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001) ;
+    generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001) ;
+    
+    //  let vec = Felt252Vec::<u128>::new() ; 
+
+
+
 }
 
 
