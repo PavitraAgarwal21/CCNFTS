@@ -1,35 +1,32 @@
-use core::integer::u512 ; 
+use core::integer::u512;
+///  @dev making the 8 * 8  chess board 
 
-    ///  @dev making the 8 * 8  chess board 
+/// @dev   
+/// every piece in the chess is represented as the 4 bits 
+/// 1 bit for the color 
+/// 3 bits for the piece 
 
+/// 000 -> empty -> 0
+/// 001 -> pawn ->  1
+/// 010 -> bishop -> 2 
+/// 011 -> rook  -> 3 
+/// 100 -> knight -> 4 
+/// 101 -> queen -> 5 
+/// 110 -> king -> 6 
 
-    /// @dev   
-    /// every piece in the chess is represented as the 4 bits 
-    /// 1 bit for the color 
-    /// 3 bits for the piece 
-    
-    /// 000 -> empty -> 0
-    /// 001 -> pawn ->  1
-    /// 010 -> bishop -> 2 
-    /// 011 -> rook  -> 3 
-    /// 100 -> knight -> 4 
-    /// 101 -> queen -> 5 
-    /// 110 -> king -> 6 
-
-    /// for each color specifically 
-    /// white pawn -> 1001 -> 9  diff 8 
-    /// black pawn -> 0001 -> 1
-    /// white bishop -> 1010 -> a 
-    /// black bishop -> 0010 -> 2 
-    /// white rook ->  1011 -> b
-    /// black rook -> 0011 -> 3 
-    /// white knight -> 1100 -> c
-    /// black knight -> 0100 -> 4 
-    /// white queen -> 1101 -> d
-    /// black queen -> 0101 -> 5 
-    /// white king -> 1110 -> e
-    /// black king -> 0110 -> 6
-
+/// for each color specifically 
+/// white pawn -> 1001 -> 9  diff 8 
+/// black pawn -> 0001 -> 1
+/// white bishop -> 1010 -> a 
+/// black bishop -> 0010 -> 2 
+/// white rook ->  1011 -> b
+/// black rook -> 0011 -> 3 
+/// white knight -> 1100 -> c
+/// black knight -> 0100 -> 4 
+/// white queen -> 1101 -> d
+/// black queen -> 0101 -> 5 
+/// white king -> 1110 -> e
+/// black king -> 0110 -> 6
 
 /// @board 
 /// 8 * 8 board
@@ -42,7 +39,6 @@ use core::integer::u512 ;
 /// so we require 512 bits  - 4*128 bits type 
 /// padding/invalid cell can be represent in f or 1111
 
-
 /// @moves 
 /// every move is represented as 12 bits 
 /// first six bits is from where 
@@ -50,8 +46,6 @@ use core::integer::u512 ;
 /// 6 bits = 2^6 = 64 = 8*8  so every position is represented in 6bits
 /// but in the 10*10 board every move can be represented as 2^7 = 128 > 100 but we take u8 and so every move is represented as u16 - 2*u8 one from and anther to 
 /// 
- 
-
 
 // fn main () {
 //      let board =  u512 {
@@ -62,3 +56,4 @@ use core::integer::u512 ;
 //     } ; 
 //     println!("{}",board);
 // }
+
