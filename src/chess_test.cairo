@@ -231,25 +231,26 @@ fn getPstTwo(_type : u256 ) -> u256 {
 pub fn applyMove(mut _board: u256, _move: u256) -> u256 {
     // u256 piece = (_board >> ((_move >> 6) << 2)) & 0xF;
     let piece: u256 = U256BitShift::shr(_board, U256BitShift::shl(U256BitShift::shr(_move, 6), 2))
-        & 0xF; // to convert the four bit 
+        & 0xF; 
+        // to convert the four bit 
     //_board &= type(uint256).max ^ (0xF << ((_move >> 6) << 2));
     // println!("befre {}" , _board); 
-    _board = _board
-        & max_u256 ^ (U256BitShift::shl(0xF, U256BitShift::shl(U256BitShift::shr(_move, 6), 2)));
-    // println!("after {}" , _board); 
+    // _board &= type(uint256).max ^ (0xF << ((_move >> 6) << 2));
+    _board = _board & (max_u256 ^ (U256BitShift::shl(0xF, U256BitShift::shl(U256BitShift::shr(_move, 6), 2))));
     // println!("{} " , piece) ;
     // _board &= type(uint256).max ^ (0xF << ((_move & 0x3F) << 2));
-    _board = _board & max_u256 ^ (U256BitShift::shl(0xF, U256BitShift::shl(_move & 0x3F, 2)));
-    // println!("afte2 {}" , _board); 
+    _board = _board & (max_u256 ^ (U256BitShift::shl(0xF, U256BitShift::shl(_move & 0x3F, 2))));
 
     // place the piece at the to index 
     // _board |= (piece << ((_move & 0x3F) << 2));
 
     _board = _board | U256BitShift::shl(piece, U256BitShift::shl(_move & 0x3F, 2));
-    // println!("afte3 {}" , _board) ;
+
     return rotate(_board);
 
 }
+// 331315573414633347629270044178747969067042435179612056278544678913
+// 331315573414633347629270044179246429565577835510633988326921601025
 
 
 // let now we have to working on the rotate the board 
@@ -451,7 +452,6 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
         toIndex - fromIndex
     };
     if (pieceAtFromIndex == 1) {
-        println!("1");
         if (toIndex <= fromIndex) {
             return false;
         }
@@ -472,7 +472,6 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
             return false;
         }
     } else if (pieceAtFromIndex == 4 || pieceAtFromIndex == 6) {
-        println!("2");
         if (U256BitShift::shr(if pieceAtFromIndex == 4 {
             0x28440
         } else {
@@ -485,7 +484,6 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
             return false;
         }
     } else {
-        println!("3");
         let mut rayFound: bool = false;
         if (pieceAtFromIndex != 2) {
             if (pieceAtFromIndex != 2) {
@@ -594,7 +592,19 @@ pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u
     return true;
 }
 pub fn working_with_array() { 
-    let _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001 ; 
-   let val =  isLegalMove(_board, 1373) ;
-   println!("{}" , val ) ;
+    let mut _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001 ; 
+  
+  if (isLegalMove(_board, 1373)) {
+    println!("Legal Move");
+// println!("before move {}" , _board) ;
+   let mut  new_board = applyMove(_board, 1373) ;
+//    println!("after move board {}", new_board) ;
+   println!("new board   {}", new_board ); 
+   let (bestmove , iswhitecheckmated ) = searchMove(new_board, 3) ;
+   println!("best move {} iswhitecheckmated {}", bestmove , iswhitecheckmated) ;
+
+ new_board = applyMove(new_board, bestmove) ;
+println!("_board  after ai move  {} " ,  new_board);
+  }
+
 }
