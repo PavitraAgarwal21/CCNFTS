@@ -1,0 +1,10 @@
+[package]
+name = "ccnfts"
+version = "0.1.0"
+edition = "2023_11"
+
+[dependencies]
+# alexandria_math = {path= "alexandria/packages/math/"}
+# alexandria_data_structures = {path= "alexandria/packages/data_structures/"}
+alexandria_math  = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "cairo-v2.3.0-rc0" }
+alexandria_data_structures  = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "cairo-v2.3.0-rc0" }
