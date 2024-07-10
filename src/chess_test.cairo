@@ -1,10 +1,9 @@
 use core::option::OptionTrait;
 use alexandria_data_structures::array_ext::ArrayTraitExt;
-use core::traits::IndexView;
 use core::array::ArrayTrait;
 use alexandria_math::{U128BitShift, U256BitShift};
 use alexandria_data_structures::vec::{Felt252Vec, VecTrait};
-use core::traits::TryInto;
+use core::traits::TryInto; 
 
 
 // let val = U256BitShift::shl(vale, 3); // right shift  multiply << 128 
@@ -52,10 +51,8 @@ let mut i = 0;
     arrst.aux_stack.append(value); // Set the new value
     arrst.aux_stack.append_all(ref arrst.main_stack); // Append the old value back
     arrst.main_stack = arrst.aux_stack; // Reverse the stack
-    arrst.aux_stack = ArrayTrait::<u256>::new() ; 
-  
+    arrst.aux_stack = ArrayTrait::<u256>::new() ;  
 }
-
 fn append(ref arrst: ArrayStack, value: u256) {
     arrst.main_stack.append(value);
     arrst.size += 1;
@@ -80,47 +77,146 @@ fn newAS() -> ArrayStack {
 //                                              //
 //////////////////////////////////////////////////
 pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
-    // let mut moves = Felt252Vec::<u256>::new() ;
-    let mut vec: Felt252Vec<u128> = Felt252Vec::<u128> { items: Default::default(), len: 0 };
-    // let
-    // let mut balances: Felt252Dict<u128> = Default::default();
-    let mut counter: felt252 = 0;
-    let mut balances: Felt252Dict<u128> = Default::default();
-    balances.insert(counter, 100);
-    counter += 1;
-    balances.insert(counter, 200);
-    counter += 1;
-    println!("{}", counter);
-    let alex_balance = balances.get(1);
-    println!("{}", alex_balance);
-    let maria_balance = balances.get(2);
-    assert!(maria_balance == 200, "Balance is not 200");
-    // generateMoves(_board) ;
-    println!("from the engine ");
-    negMax(_board, _depth);
-    return (12, true);
+    let mut moves = generateMoves(_board); 
+    if (get(@moves, 0) == 0) {
+        return (0, false);
+    }
+    let mut bestScore: i128 = -4_196;
+    let mut currentScore : i128 = 0 ; 
+    let mut bestMove : u256  = 0 ;  
+
+    let mut i: u32 = 0;
+    while get(@moves , i) != 0 {
+        let mut movePartition = get(@moves, i);
+        while movePartition != 0 {
+            currentScore = evaluateMove(_board, movePartition & 0xFFF) + 
+            negMax(applyMove(_board, movePartition & 0xFFF), _depth - 1);
+            
+            if (currentScore > bestScore) {
+                bestScore = currentScore;
+                bestMove = movePartition & 0xFFF;
+            }
+            movePartition = U256BitShift::shr(movePartition, 0xC);
+        };
+        i = i + 1;
+    };
+
+
+    if (bestScore < -1_260) {return (0, false) ;  };
+    return (bestMove , bestScore > 1_260) ;
 }
 
 pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {
         return 0;
     }
+    println!(" board {} depth {}" , _board , _depth);
     let mut moves  = generateMoves(_board);
     // if (moves(0) == 0) {
     //     return 0;
     // }
+    println!("moves {:?}", get(@moves, 0));
+    if (get(@moves, 0) == 0) {
+        return 0;
+    }
+    
     let mut bestScore: i128 = -4_196;
     let mut currentScore: i128 = 0;
     let mut bestMove: u256 = 0;
     let mut i: u32 = 0;
-    // while moves
-    //     .at(i) != 0 {
-    //         let mut movePartition = moves.at(i);
-    //         while movePartition != 0 {};
+    while get(@moves , i) != 0 {
+            let mut movePartition = get(@moves, i); 
+            while movePartition != 0 {
+            
+                currentScore = evaluateMove(_board, movePartition & 0xFFF);
+                println!("evaluate is corrected ");
+                if (currentScore > bestScore ) {
+                    bestScore = currentScore ; 
+                    bestMove = movePartition & 0xFFF ; 
+                }
+                movePartition = U256BitShift::shr(movePartition, 0xC);
+            };
+            i = i + 1;
+        };
+        if ( ((U256BitShift::shr(_board , U256BitShift::shl((bestMove & 0x3F) , 2)))&7) == 6 ) {
+return -4_000 ; 
+        }
+         if (_board &1 == 0 ) {
+            return bestScore + negMax(applyMove(_board , bestMove), _depth - 1); 
+         } else {
+            return -bestScore + negMax(applyMove(_board , bestMove), _depth - 1); 
+         }
+}
 
-    //         i = i + 1;
-    //     };
-    return 0;
+
+fn evaluateMove(_board : u256  , _move : u256) -> i128 {
+
+    let fromIndex : u256  = 6*(U256BitShift::shr(_move , 9 ))+((U256BitShift::shr(_move , 6))&7)-7 ; 
+
+    let toIndex : u256 = 6 * ((U256BitShift::shr(_move & 0x3F , 3))) + ((_move & 0x3F ) &7 ) - 7 ; 
+    
+    // println!("nnnnsgdv {}" , U256BitShift::shl(U256BitShift::shr(_move , 6 ),2));
+// println!("wefvcrs {} " , U256BitShift::shr(_board ,(U256BitShift::shl(U256BitShift::shr(_move , 6 ),2)))&7);
+    let pieceAtFromIndex : u256 = U256BitShift::shr(_board , (U256BitShift::shl(U256BitShift::shr(_move , 6 ),2)))&7; 
+    
+   
+    let pieceAtToIndex : u256 = (U256BitShift::shr(_board , (U256BitShift::shl(_move & 0x3F ,2))) & 7) ;
+   
+    println!(" move - {} fromIndex - {}  toIndex - {} pieceAtFromIndex - {} pieceAtToIndex - {}  "  , _move , fromIndex , toIndex  , pieceAtFromIndex , pieceAtToIndex );
+
+
+   let mut oldPst : u256  = 0; 
+   let mut newPst : u256 =0 ; 
+   let mut captureValue : u256 =0 ;  
+   if (pieceAtToIndex != 0) {
+    if (pieceAtToIndex < 5) { // piece is not a queen or king 
+        captureValue = U256BitShift::shr(getPst(pieceAtToIndex), if ((7 *(0x23 -toIndex ))<255) {(7 *(0x23 -toIndex ))} else {255 } ) & 0x7F;  
+ } else if (toIndex < 0x12)  { 
+    captureValue = U256BitShift::shr(getPst(pieceAtToIndex), if ( (0xC*(0x11 - toIndex ))< 255 ) {(0xC*(0x11 - toIndex ))} else {255}  ) & 0xFFF;
+ } else {
+    captureValue = U256BitShift::shr(getPstTwo(pieceAtToIndex), if ( (0xC*(0x23 -toIndex )) < 255 ) {(0xC*(0x23 -toIndex ))} else {255}  )&0xFFF ;  
+ }
+   }
+   if (pieceAtFromIndex < 5) { // if piece is not the queen or king
+    oldPst = U256BitShift::shr(getPst(pieceAtFromIndex), if ((7*(0x23 - fromIndex)) < 255) {(7*(0x23 - fromIndex)) } else {255} ) & 0x7F ;
+    newPst = U256BitShift::shr(getPst(pieceAtFromIndex),if ((7 * toIndex) < 255 ) {(7 * toIndex)} else {255}  ) & 0x7F;
+   } 
+   else if  (fromIndex < 0x12) { 
+    oldPst = U256BitShift::shr(getPstTwo(pieceAtFromIndex),(if ((0xC * fromIndex)<255 ) {(0xC * fromIndex)} else {255} ) ) & 0xFFF;
+    newPst = U256BitShift::shr(getPstTwo(pieceAtFromIndex),(if  ((0xC * toIndex) < 255) {0xC * toIndex } else {255}   )) & 0xFFF;
+   } 
+   else {
+    if (fromIndex >= 0x12 && toIndex >= 0x12) {
+    oldPst = U256BitShift::shr(getPst(pieceAtFromIndex) , (if ((0xC * (fromIndex - 0x12)) < 255 ) { 0xC * (fromIndex - 0x12) } else {255}  )) & 0xFFF;
+    newPst = U256BitShift::shr(getPst(pieceAtFromIndex),(if ( (0xC * (toIndex - 0x12)) < 255 ) {(0xC * (toIndex - 0x12))  }  else {255} )) & 0xFFF;
+    }
+ }
+   let capture_felt  : felt252 = captureValue.try_into().unwrap(); 
+   let captureValueI : i128 = capture_felt.try_into().unwrap(); 
+    let oldPst_felt : felt252 = oldPst.try_into().unwrap();
+    let oldPstI : i128 = oldPst_felt.try_into().unwrap();
+    let newPst_felt : felt252 = newPst.try_into().unwrap();
+    let newPstI : i128 = newPst_felt.try_into().unwrap();
+    let computed_i128 : i128 = captureValueI + newPstI - oldPstI ;
+   return computed_i128 ;
+}
+
+fn getPst(_type : u256 ) ->  u256 {
+    if (_type == 1) {return 0x2850A142850F1E3C78F1E2858C182C50A943468A152A788103C54A142850A14;}
+    if (_type == 2) {return 0x7D0204080FA042850A140810E24487020448912240810E1428701F40810203E;}
+    if (_type == 3) {return 0xC993264C9932E6CD9B365C793264C98F1E4C993263C793264C98F264CB97264;}
+    if (_type == 4) {return 0x6CE1B3670E9C3C8101E38750224480E9D4189120BA70F20C178E1B3874E9C36;}
+    if (_type == 5) {return 0xB00B20B30B30B20B00B20B40B40B40B40B20B30B40B50B50B40B3;}
+    return 0xF9AF98F96F96F98F9AF9AF98F96F96F98F9AF9CF9AF98F98F9AF9B;
+}
+
+fn getPstTwo(_type : u256 ) -> u256 {
+     if(_type == 5 ) { 
+        return  0xB30B50B50B50B40B30B20B40B50B40B40B20B00B20B30B30B20B0 ;
+    } else {
+       return  0xF9EF9CF9CF9CF9CF9EFA1FA1FA0FA0FA1FA1FA4FA6FA2FA2FA6FA4 ; 
+    }  
+ 
 }
 
 //////////////////////////////////////////////////
@@ -325,7 +421,7 @@ pub fn generateMoves(_board: u256) -> ArrayStack  {
         /// outerloop 
         index = U256BitShift::shr(index, 6);
     };
-    println!("{:?}", movesArray.items.main_stack);
+    // println!("{:?}", movesArray.items.main_stack);
 return movesArray.items ; 
 }
 
@@ -494,6 +590,11 @@ pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u
     return true;
 }
 pub fn working_with_array() { 
-    let arr = generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001);
-    println!("{:?}", arr.main_stack);
+    let _board = 0x32502300100061000010000091990000090D9000BC0ECB000000000 ; 
+    // let arr = generateMoves(_board);
+    // println!("{:?}", arr.main_stack);
+    // let val = negMax(_board, 3);
+   let (a , b ) =  searchMove(_board, 3);
+   println!("{} {}" , a , b);
+
 }
