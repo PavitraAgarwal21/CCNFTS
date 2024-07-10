@@ -247,7 +247,7 @@ pub fn applyMove(mut _board: u256, _move: u256) -> u256 {
 
     _board = _board | U256BitShift::shl(piece, U256BitShift::shl(_move & 0x3F, 2));
     // println!("afte3 {}" , _board) ;
-    return _board;
+    return rotate(_board);
 
 }
 
@@ -266,7 +266,8 @@ fn rotate(mut _board: u256) -> u256 {
     };
     rotatedBoard
 }
-pub fn generateMoves(_board: u256) -> ArrayStack  {
+
+pub fn generateMoves(_board: u256) -> ArrayStack  { // done and checked 
     let mut movesArray = MoveArray { index: 0, items: newAS(), };
     append(ref movesArray.items, 0);
     append(ref movesArray.items, 0);
@@ -428,21 +429,19 @@ return movesArray.items ;
 pub fn isLegalMove(_board: u256, _move: u256) -> bool {
     let fromIndex: u256 = U256BitShift::shr(_move, 6);
     let toIndex: u256 = _move & 0x3F;
-    if (U256BitShift::shr(0x7E7E7E7E7E7E00, fromIndex) & 1 == 0) {
+ 
+    if ((U256BitShift::shr(0x7E7E7E7E7E7E00, fromIndex) & 1) == 0) {
         return false;
     }
-    if (U256BitShift::shr(0x7E7E7E7E7E7E00, toIndex) & 1 == 1) {
+   
+    if ((U256BitShift::shr(0x7E7E7E7E7E7E00, toIndex) & 1) == 0) {
         return false;
     }
 
-    let mut pieceAtFromIndex: u256 = U256BitShift::shr(_board, U256BitShift::shl(fromIndex, 2))
-        & 0xF;
-    if (pieceAtFromIndex == 0) {
-        return false;
-    }
-    if (U256BitShift::shr(pieceAtFromIndex, 3) != _board & 1) {
-        return false;
-    }
+
+    let mut pieceAtFromIndex: u256 = U256BitShift::shr(_board, U256BitShift::shl(fromIndex, 2))& 0xF;
+    if (pieceAtFromIndex == 0) {return false;}
+    if (U256BitShift::shr(pieceAtFromIndex, 3) != _board & 1) {return false;}
     pieceAtFromIndex = pieceAtFromIndex & 0x7;
 
     let adjustedBoard = U256BitShift::shr(_board, U256BitShift::shl(toIndex, 2));
@@ -452,6 +451,7 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
         toIndex - fromIndex
     };
     if (pieceAtFromIndex == 1) {
+        println!("1");
         if (toIndex <= fromIndex) {
             return false;
         }
@@ -472,6 +472,7 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
             return false;
         }
     } else if (pieceAtFromIndex == 4 || pieceAtFromIndex == 6) {
+        println!("2");
         if (U256BitShift::shr(if pieceAtFromIndex == 4 {
             0x28440
         } else {
@@ -484,6 +485,7 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
             return false;
         }
     } else {
+        println!("3");
         let mut rayFound: bool = false;
         if (pieceAtFromIndex != 2) {
             if (pieceAtFromIndex != 2) {
@@ -500,11 +502,13 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
             return false;
         }
     }
-
-    // if (Engine.negaMax(_board.applyMove(_move), 1) < -1_260) return false;
-
+    // if (negMax(applyMove(_board,_move),1) < -1_260) {
+    //     return false;
+    // }
     return true;
 }
+
+
 
 
 pub fn searchRay(_board: u256, _fromIndex: u256, _toIndex: u256, _directionVector: u256) -> bool {
@@ -590,11 +594,7 @@ pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u
     return true;
 }
 pub fn working_with_array() { 
-    let _board = 0x32502300100061000010000091990000090D9000BC0ECB000000000 ; 
-    // let arr = generateMoves(_board);
-    // println!("{:?}", arr.main_stack);
-    // let val = negMax(_board, 3);
-   let (a , b ) =  searchMove(_board, 3);
-   println!("{} {}" , a , b);
-
+    let _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001 ; 
+   let val =  isLegalMove(_board, 1373) ;
+   println!("{}" , val ) ;
 }
