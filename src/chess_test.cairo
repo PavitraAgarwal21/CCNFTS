@@ -1,21 +1,88 @@
+use core::option::OptionTrait;
+use alexandria_data_structures::array_ext::ArrayTraitExt;
 use core::traits::IndexView;
 use core::array::ArrayTrait;
 use alexandria_math::{U128BitShift, U256BitShift};
 use alexandria_data_structures::vec::{Felt252Vec, VecTrait};
+use core::traits::TryInto;
+
+
 // let val = U256BitShift::shl(vale, 3); // right shift  multiply << 128 
 // let valr =U256BitShift::shr(vale, 3); // left shift  divison >>  2
+
+const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+//////////////////////////////////////////////////
+//                                              //
+//  Library: ArrayStack                         //
+//  Description:                                //
+//  - Implemented ArrayStack library methods    //
+//    with proper trait implementations.        //
+//                                              //
+//////////////////////////////////////////////////
+#[derive(Drop)]
+pub struct ArrayStack {
+    main_stack: Array<u256>,
+    aux_stack: Array<u256>,
+    size: usize,
+}
 #[derive(Drop)]
 pub struct Move {
     board: u256,
     metadata: u256,
 }
-
+#[derive(Drop)]
 pub struct MoveArray {
     pub index: u32,
-    pub items: Felt252Vec<u128>,
+    pub items: ArrayStack,
 }
-const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
+fn insert(ref arrst: ArrayStack, index: usize, value: u256) {
+    if (index >= arrst.size) {
+        println!("Array out of bound");
+    }
+    let offset = arrst.size - index - 1;
+    let mut i = 0;
+
+    while i < offset {
+        let val = arrst.main_stack.pop_front().unwrap();
+        arrst.aux_stack.append(val);
+        i += 1;
+    };
+    arrst.main_stack.pop_front(); // Remove the old value
+    arrst.main_stack.append(value); // Set the new value
+
+    while arrst
+        .aux_stack
+        .len() > 0 {
+            let val = arrst.aux_stack.pop_front().unwrap();
+            arrst.main_stack.append(val);
+        }
+}
+
+fn append(ref arrst: ArrayStack, value: u256) {
+    arrst.main_stack.append(value);
+    arrst.size += 1;
+}
+fn get(arrst: @ArrayStack, index: usize) -> u256 {
+    return arrst.main_stack.at(index).clone();
+}
+fn len(arrst: @ArrayStack) -> usize {
+    return arrst.size.clone();
+}
+fn newAS() -> ArrayStack {
+    ArrayStack {
+        main_stack: ArrayTrait::<u256>::new(), aux_stack: ArrayTrait::<u256>::new(), size: 0,
+    }
+}
+//////////////////////////////////////////////////
+//                                              //
+//  Chess AI Implementation                     //
+//  Description:                                //
+//  - Implemented basic chess AI functionalities//
+//    such as move generation and evaluation.   //
+//                                              //
+//////////////////////////////////////////////////
 pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
     // let mut moves = Felt252Vec::<u256>::new() ;
     let mut vec: Felt252Vec<u128> = Felt252Vec::<u128> { items: Default::default(), len: 0 };
@@ -42,25 +109,32 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {
         return 0;
     }
-    let mut moves: Felt252Vec<u128> = Felt252Vec::<u128> { items: Default::default(), len: 0 };
-    generateMoves(_board);
-    if (moves.at(0) == 0) {
-        return 0;
-    }
+    let mut moves = generateMoves(_board);
+    // if (moves(0) == 0) {
+    //     return 0;
+    // }
     let mut bestScore: i128 = -4_196;
     let mut currentScore: i128 = 0;
     let mut bestMove: u256 = 0;
     let mut i: u32 = 0;
-    while moves
-        .at(i) != 0 {
-            let mut movePartition = moves.at(i);
-            while movePartition != 0 {};
-            // generateMoves(_board) ; 
+    // while moves
+    //     .at(i) != 0 {
+    //         let mut movePartition = moves.at(i);
+    //         while movePartition != 0 {};
 
-            i = i + 1;
-        };
+    //         i = i + 1;
+    //     };
     return 0;
 }
+
+//////////////////////////////////////////////////
+//                                              //
+//  Chess Validation and Application            //
+//  Description:                                //
+//  - Implemented chess move validation         //
+//    and application logic for a chess game.   //
+//                                              //
+//////////////////////////////////////////////////
 
 pub fn applyMove(mut _board: u256, _move: u256) -> u256 {
     // u256 piece = (_board >> ((_move >> 6) << 2)) & 0xF;
@@ -82,10 +156,7 @@ pub fn applyMove(mut _board: u256, _move: u256) -> u256 {
     _board = _board | U256BitShift::shl(piece, U256BitShift::shl(_move & 0x3F, 2));
     // println!("afte3 {}" , _board) ;
     return _board;
-//123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-//123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456786ABCDEF
-//123456789ABCDEF0123456789ABC2EF0123456789ABCDEF0123456786ABCDEF
-//123456789ABCDEF0123456789ABCBEF0123456789ABCDEF0123456786ABCDEF
+
 }
 
 
@@ -103,8 +174,10 @@ fn rotate(mut _board: u256) -> u256 {
     };
     rotatedBoard
 }
-
-pub fn generateMoves(_board: u256) {
+pub fn generateMoves(_board: u256) -> ArrayStack  {
+    let mut movesArray = MoveArray { index: 0, items: newAS(), };
+    append(ref movesArray.items, 0);
+    // append(ref movesArray.items, 0);
     let mut move: u256 = 0;
     let mut moveTo: u256 = 0;
     let mut index: u256 = 0xDB5D33CB1BADB2BAA99A59238A179D71B69959551349138D30B289;
@@ -112,10 +185,12 @@ pub fn generateMoves(_board: u256) {
         if index == 0 {
             break;
         }
-        let mut adjustedIndex = index & 0x3F;
-        let mut adjustedBoard = U256BitShift::shr(_board, U256BitShift::shl(adjustedIndex, 2));
+        let mut adjustedIndex: u256 = (index & 0x3F);
+        let mut adjustedBoard: u256 = U256BitShift::shr(
+            _board, U256BitShift::shl(adjustedIndex, 2)
+        );
         let mut piece = adjustedBoard & 0xF;
-        // println!("piece {}" , piece);
+
         //    println!("last bit of the board {}",U256BitShift::shr(piece,3));
         //    println!("last {} ", _board& 1);
         // if the piece is empty or the piece is not the same as the current player
@@ -129,40 +204,131 @@ pub fn generateMoves(_board: u256) {
         if (piece == 1) {
             /// if the front row is empty or not 
             if (U256BitShift::shr(adjustedBoard, 0x20) & 0xF == 0) {
-                // println!("adjusted board {}" , U256BitShift::shr(adjustedBoard , 0x20)&0xf );
-                // println!("pawn front empty {}" , piece)  ;
-                // println!("pawn from{}",adjustedIndex  ) ;
-                // println!("pawn to {}",adjustedIndex + 8 ) ; 
+
+                appendTo(ref movesArray, adjustedIndex, adjustedIndex + 8);
+
                 /// move the pawn to the 2 row head 
                 /// means it is in his 2 row starting point and can move 2 steps and that place is empty 
                 if ((U256BitShift::shr(adjustedIndex, 3) == 2)
-                    && (U256BitShift::shr(adjustedBoard, 0x40) & 0xF == 0)) {// println!("pawn from{}",adjustedIndex  ) ;
-                // println!("pawn to {}",adjustedIndex + 0x10 ) ; 
+                    && (U256BitShift::shr(adjustedBoard, 0x40)
+                        & 0xF == 0)) {
+                    appendTo(ref movesArray, adjustedIndex, adjustedIndex + 0x10);
                 }
             }
             /// capture the piece to the left diagonal of it  
             if (isCapture(_board, U256BitShift::shr(adjustedBoard, 0x1C))) {
                 ///append to the moves 
-                println!("pawn from{}", adjustedIndex);
-                println!("pawn to {}", adjustedIndex + 7);
+                appendTo(ref movesArray, adjustedIndex, adjustedIndex + 7);
+
             }
             //// capture the piece to the right diagonal of it 
             if (isCapture(_board, U256BitShift::shr(adjustedBoard, 0x24))) {
                 ///append to the moves 
-                println!("pawn from{}", adjustedIndex);
-                println!("pawn to {}", adjustedIndex + 9);
+                appendTo(ref movesArray, adjustedIndex, adjustedIndex + 9);
             }
-        }/// if piece is knight(horse) or king 
+        } /// if piece is knight(horse) or king 
         else if (piece & 0x7 == 4 || piece & 0x7 == 6) {
-            let mut piece = adjustedBoard & 0xF;
-            println!("piece {}", piece);
-            println!("adjusted board {}", adjustedIndex);
+
+            let mut move = if piece == 4 {
+                0x060A0F11
+            } else {
+                0x01070809
+            };
+
+            while (move != 0) {
+                if (isValid(_board, adjustedIndex + (move & 0xFF))) {
+                    appendTo(ref movesArray, adjustedIndex, adjustedIndex + (move & 0xFF));
+                }
+                if (move <= adjustedIndex && isValid(_board, adjustedIndex - (move & 0xFF))) {
+                    appendTo(ref movesArray, adjustedIndex, adjustedIndex - (move & 0xFF));
+                }
+                move = U256BitShift::shr(move, 8);
+            }
+        } else {
+            if (piece != 2) {
+                move = adjustedIndex + 1; // 10 
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move + 1;
+                };
+                move = adjustedIndex - 1; // move - 8 
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+
+                        break;
+                    }
+
+                    move = move - 1;
+                };
+
+                move = adjustedIndex + 8;
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move + 8;
+                };
+                move = adjustedIndex - 8;
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move - 8;
+                };
+            }
+            if (piece != 3) {
+                move = adjustedIndex + 7;
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move + 7;
+                };
+                move = adjustedIndex - 7;
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move - 7;
+                };
+                move = adjustedIndex + 9;
+                while isValid(_board, move) {
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move + 9;
+                };
+
+                move = adjustedIndex - 9;
+                while isValid(_board, move) {
+                    if (move == 0) {
+                        break;
+                    }
+                    appendTo(ref movesArray, adjustedIndex, move);
+                    if (isCapture(_board, U256BitShift::shr(_board, U256BitShift::shl(move, 2)))) {
+                        break;
+                    }
+                    move = move - 9;
+                };
+
+            }
         }
-
+        /// outerloop 
         index = U256BitShift::shr(index, 6);
-    }
+    };
+    println!("{:?}", movesArray.items.main_stack);
+return movesArray.items ; 
 }
-
 
 pub fn isLegalMove(_board: u256, _move: u256) -> bool {
     let fromIndex: u256 = U256BitShift::shr(_move, 6);
@@ -290,68 +456,46 @@ pub fn searchRay(_board: u256, _fromIndex: u256, _toIndex: u256, _directionVecto
 
 pub fn isCapture(_board: u256, _indexAdjustedBoard: u256) -> bool {
     /// exp the square you want to caputure is not empty and the piece is not the same as the current player
-    return ((_indexAdjustedBoard & 0xf != 0)
-        && (U256BitShift::shr(_indexAdjustedBoard & 0xf, 3) != _board & 1));
+    return ((_indexAdjustedBoard & 0xF != 0)
+        && (U256BitShift::shr(_indexAdjustedBoard & 0xF, 3) != _board & 1));
 }
 
 
-pub fn isValid(_toIndex: u256, _board: u256) -> bool {
-    return (U256BitShift::shr(0x7E7E7E7E7E7E00, _toIndex)
-        & 1 == 1 // move must be with in the bounds 
-        && (U256BitShift::shr(
-            _board, U256BitShift::shl(_toIndex, 2)
-        )) == 0 // the to index must be empty
-            || U256BitShift::shr(
-                U256BitShift::shr(_board, U256BitShift::shl(_toIndex, 2)) & 0xf, 3
-            ) != _board
-                & 1 ///piece is the opposite contester 
-                );
+pub fn isValid(_board: u256, _toIndex: u256) -> bool {
+    return (
+        ((U256BitShift::shr(0x7E7E7E7E7E7E00, _toIndex)& 1) == 1) // move must be with in the bounds 
+        && 
+        ((U256BitShift::shr(_board, U256BitShift::shl(_toIndex, 2))& 0xF) == 0 // the to index must be empty
+        || 
+        U256BitShift::shr(U256BitShift::shr(_board, U256BitShift::shl(_toIndex, 2)) & 0xF, 3) != _board& 1 ///piece is the opposite contester 
+        ));
 }
+
 // here append to index is changed to and tested more  
-pub fn appendTo(mut _moveArray: MoveArray, _fromMoveIndex: u128, _toMoveIndex: u128) -> bool {
+pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u256) -> bool {
     let mut currentIndex = _moveArray.index;
-    let mut currentPartition: u128 = _moveArray.items.at(currentIndex);
-    if (currentPartition > U128BitShift::shl(1, 0xF6)) {
+    let mut currentPartition = get(@_moveArray.items, currentIndex);
+    if (currentPartition > U256BitShift::shl(1, 0xF6)) {
         _moveArray.index += 1;
-        _moveArray.items.set(_moveArray.index, U128BitShift::shl(_fromMoveIndex, 6) | _toMoveIndex);
+        insert(
+            ref _moveArray.items,
+            _moveArray.index,
+            U256BitShift::shl(_fromMoveIndex, 6) | _toMoveIndex
+        );
     } else {
-        _moveArray
-            .items
-            .set(
-                currentIndex,
-                U128BitShift::shl(currentPartition, 0xC)
-                    | U128BitShift::shl(_fromMoveIndex, 6)
-                    | _toMoveIndex
-            )
+        insert(
+            ref _moveArray.items,
+            currentIndex,
+            U256BitShift::shl(currentPartition, 0xC)
+                | U256BitShift::shl(_fromMoveIndex, 6)
+                | _toMoveIndex
+        )
     }
-
-    println!("{}", currentPartition);
-    println!("{}", currentIndex);
-    println!("{}", _moveArray.items.len);
-    // let currentPartition : u256  = _moveArray.items; 
-    // let val : u256 = U256BitShift::shl(1,0xF6)  ; 
-    // if (currentPartition > val ) {
-    //     let val  : u256 = U256BitShift::shr(_fromMoveIndex , 6) | _toMoveIndex ; 
-
-    //     // _moveArray.*items.at(++_moveArray.index) = currentIndex + 1 ;
-
-    // } else {
-
-    // }
 
     return true;
 }
 
-pub fn working_with_array() {// let mut vec = Felt252Vec::<u128>::new() ;
-
-// let mut arr =  ArrayTrait::<u256>::new() ;
-// arr.append(23);
-// arr.append(123);
-// arr.append(1123);
-// arr.append(11123);
-// arr.append(111123);
-// arr.append(1111123);
-// arr.get(2) ;
-//println!("{:?}" , arr.get(2)  );
-
+pub fn working_with_array() { 
+    let arr = generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001);
+    println!("{:?}", arr.main_stack);
 }
