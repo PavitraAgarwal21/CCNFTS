@@ -1,5 +1,5 @@
 pub mod chess_test;
-use chess_test::{generateMoves, searchMove, negMax, MoveArray , ArrayStack , working_with_array };
+use chess_test::{generateMoves, searchMove, negMax, MoveArray, ArrayStack, working_with_array};
 
 
 fn main() {
@@ -25,8 +25,8 @@ fn main() {
 
     // let mut vec: Felt252Vec<u128> = Felt252Vec::<u128> { items: Default::default(), len: 0 };
     // let movearray = MoveArray { index: 0, items: vec, };
-    working_with_array() ; 
-     //generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001);
+    working_with_array();
+//generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001);
 // appendTo(movearray, 0xA12, 0x1A2);
 //  let vec = Felt252Vec::<u128>::new() ; 
 }
