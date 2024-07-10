@@ -37,27 +37,23 @@ pub struct MoveArray {
     pub items: ArrayStack,
 }
 
-fn insert(ref arrst: ArrayStack, index: usize, value: u256) {
-    if (index >= arrst.size) {
-        println!("Array out of bound");
+fn insert(ref arrst : ArrayStack , index : usize , value : u256 ) {  
+    if (index >= arrst.size ) {
+        println!("Array out of bound"); 
     }
-    let offset = arrst.size - index - 1;
-    let mut i = 0;
-
-    while i < offset {
+// println!("{:?}", arrst.main_stack); //
+let mut i = 0;
+    while i < index {
         let val = arrst.main_stack.pop_front().unwrap();
         arrst.aux_stack.append(val);
         i += 1;
     };
     arrst.main_stack.pop_front(); // Remove the old value
-    arrst.main_stack.append(value); // Set the new value
-
-    while arrst
-        .aux_stack
-        .len() > 0 {
-            let val = arrst.aux_stack.pop_front().unwrap();
-            arrst.main_stack.append(val);
-        }
+    arrst.aux_stack.append(value); // Set the new value
+    arrst.aux_stack.append_all(ref arrst.main_stack); // Append the old value back
+    arrst.main_stack = arrst.aux_stack; // Reverse the stack
+    arrst.aux_stack = ArrayTrait::<u256>::new() ; 
+  
 }
 
 fn append(ref arrst: ArrayStack, value: u256) {
@@ -109,7 +105,7 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {
         return 0;
     }
-    let mut moves = generateMoves(_board);
+    let mut moves  = generateMoves(_board);
     // if (moves(0) == 0) {
     //     return 0;
     // }
@@ -177,7 +173,10 @@ fn rotate(mut _board: u256) -> u256 {
 pub fn generateMoves(_board: u256) -> ArrayStack  {
     let mut movesArray = MoveArray { index: 0, items: newAS(), };
     append(ref movesArray.items, 0);
-    // append(ref movesArray.items, 0);
+    append(ref movesArray.items, 0);
+    append(ref movesArray.items, 0);
+    append(ref movesArray.items, 0);
+    append(ref movesArray.items, 0);
     let mut move: u256 = 0;
     let mut moveTo: u256 = 0;
     let mut index: u256 = 0xDB5D33CB1BADB2BAA99A59238A179D71B69959551349138D30B289;
@@ -494,7 +493,6 @@ pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u
 
     return true;
 }
-
 pub fn working_with_array() { 
     let arr = generateMoves(0x3256230011111100000000000000000099999900BCDECB000000001);
     println!("{:?}", arr.main_stack);
