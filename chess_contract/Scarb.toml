@@ -4,7 +4,14 @@ version = "0.1.0"
 edition = "2023_11"
 
 [dependencies]
+starknet = ">=2.2.0"
 # alexandria_math = {path= "alexandria/packages/math/"}
 # alexandria_data_structures = {path= "alexandria/packages/data_structures/"}
 alexandria_math  = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "cairo-v2.3.0-rc0" }
 alexandria_data_structures  = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "cairo-v2.3.0-rc0" }
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.12.0" }
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.13.0" }
+
+[[target.starknet-contract]]
+sierra = true
+casm =true 
