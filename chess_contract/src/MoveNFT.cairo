@@ -14,6 +14,26 @@
 
 // first of all this contract has been called by the
 
+
+// defining the trait for the boardNFT which i want to use 
+#[starknet::interface]
+pub trait IBoardNFT<TContractState> {
+    fn getname(self: @TContractState) -> felt252;
+    fn getsymbol(self: @TContractState) -> felt252;
+    fn hardness_Depth(self: @TContractState, token_id: u256) -> u256;
+    fn board_minted_state(self: @TContractState, token_id: u256) -> u256;
+
+    fn board_current_state(self: @TContractState, token_id: u256) -> u256;
+    fn update_board_current_state(ref self: TContractState, token_id: u256, new_state_board: u256);
+}
+
+
+
+
+
+
+
+
 #[starknet::contract]
 mod MoveNFT {
     use starknet::ContractAddress;
@@ -46,6 +66,11 @@ mod MoveNFT {
     const INTERFACE_ERC721_METADATA: felt252 = 0x5b5e139f;
     const INTERFACE_ERC721_RECEIVER: felt252 = 0x150b7a02;
 
+
+    use super::IBoardNFTDispatcher; 
+    use super::IBoardNFTDispatcherTrait;
+
+
     #[storage]
     struct Storage {
         owners: LegacyMap::<u256, ContractAddress>,
@@ -53,6 +78,9 @@ mod MoveNFT {
         token_approvals: LegacyMap::<u256, ContractAddress>,
         operator_approvals: LegacyMap::<(ContractAddress, ContractAddress), bool>,
         count: u256, //Total number of NFTs minted
+        boardNFTAddress: ContractAddress, 
+        boardNFT: IBoardNFTDispatcher,
+
     }
 
     #[event]
@@ -87,26 +115,64 @@ mod MoveNFT {
 
 
     #[constructor]
-    fn constructor(ref self: ContractState) {
-        self.initConfig();
+    fn constructor(ref self: ContractState , _boardNFTAddress : ContractAddress ) {
+        self.initConfig(_boardNFTAddress) ;
     }
 
     #[generate_trait]
     impl ConfigImpl of ConfigTrait {
-        fn initConfig(ref self: ContractState) {}
+        fn initConfig(ref self: ContractState , _boardNFTAddress : ContractAddress) {
+
+            self.boardNFTAddress.write(_boardNFTAddress) ;
+
+            let boardNFT = IBoardNFTDispatcher{ contract_address: _boardNFTAddress } ;
+
+            self.boardNFT.write(boardNFT) ;
+
+        }
+
     }
+
+
+
+    // we also have to design the design that we can use the deploued contract from that 
+    // const BoardNFTContract : ContractAddress = 0x26087b21ffe0510269e562487d0f75f603718f5bc6646cac3ae02d187823d89 ; 
+
+
+
+
+
 
     #[external(v0)]
     #[generate_trait]
-    impl IERC721Impl of IERC721Trait {
-        fn name(self: @ContractState) -> felt252 {
-            NAME
-        }
+    impl IMoveImpl of ImoveTrait {
 
-        fn symbol(self: @ContractState) -> felt252 {
-            SYMBOL
-        }
 
+
+        fn boardNFTgetname(self : @ContractState) -> felt252 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.getname() 
+        } 
+        fn boardNFTgetsymbol(self : @ContractState) -> felt252 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.getsymbol() 
+        }
+        fn boardNFThardness( self : @ContractState, token_id: u256) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.hardness_Depth(token_id)
+        }
+        fn boardNFTboard_minted_state( self : @ContractState, token_id: u256) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.board_minted_state(token_id)
+        }
+        fn boardNFTboard_current_state( self : @ContractState, token_id: u256) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.board_current_state(token_id)
+        }
+        fn boardNFTupdate_board_current_state( ref self : ContractState, token_id: u256, new_state_board: u256) {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.update_board_current_state(token_id, new_state_board)
+        }
 
         fn playmove(ref self: ContractState, depth: u256) {
             let board: u256 = 0x3256230011111100000000000000000099999900BCDECB000000001;
@@ -148,6 +214,28 @@ mod MoveNFT {
         // transfer the token to the tba account
 
         // what information does it hold about the nft 
+
+
+
+    }  
+
+
+
+
+
+
+
+
+    #[external(v0)]
+    #[generate_trait]
+    impl IERC721Impl of IERC721Trait {
+        fn name(self: @ContractState) -> felt252 {
+            NAME
+        }
+
+        fn symbol(self: @ContractState) -> felt252 {
+            SYMBOL
+        }       
 
         fn token_uri(self: @ContractState, token_id: u256) -> Array<felt252> {
             self.tokenURI(token_id)
@@ -234,8 +322,7 @@ mod MoveNFT {
         ) {
             self.safeTransferFrom(from, to, token_id, data)
         }
-    // ab agayaga na mmaja bedu :-)
-    // ok lets go writh into it :-(
+   
 
     }
 
