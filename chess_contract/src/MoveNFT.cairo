@@ -14,24 +14,52 @@
 
 // first of all this contract has been called by the
 
-
 // defining the trait for the boardNFT which i want to use 
+
+use starknet::ContractAddress;
+use starknet::ClassHash;
+use starknet::account::Call;
+
+
+// token bound account 
+// when we connecvt to the account what  does it mean by it is connected 
+// w have been minted the nft to the connceted wallet which is the token boun account 
+
+// leta assume i have the board nft 
+// not assume that i have been deployed the tokenbound account for that nft 
+// i have connceted that token bound account to this nft contract and call with the help of the execute function 
+
+#[starknet::interface]
+trait IAccount<TContractState> {
+    fn is_valid_signature(
+        self: @TContractState, hash: felt252, signature: Span<felt252>
+    ) -> felt252;
+    fn is_valid_signer(self: @TContractState, signer: ContractAddress) -> felt252;
+    fn __validate__(ref self: TContractState, calls: Array<Call>) -> felt252;
+    fn __validate_declare__(self: @TContractState, class_hash: felt252) -> felt252;
+    fn __validate_deploy__(
+        self: @TContractState, class_hash: felt252, contract_address_salt: felt252
+    ) -> felt252;
+    fn __execute__(ref self: TContractState, calls: Array<Call>) -> Array<Span<felt252>>;
+    fn token(self: @TContractState) -> (ContractAddress, u256);
+    fn owner(self: @TContractState) -> ContractAddress;
+    fn lock(ref self: TContractState, duration: u64);
+    fn is_locked(self: @TContractState) -> (bool, u64);
+    fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
+}
+
+
 #[starknet::interface]
 pub trait IBoardNFT<TContractState> {
     fn getname(self: @TContractState) -> felt252;
     fn getsymbol(self: @TContractState) -> felt252;
     fn hardness_Depth(self: @TContractState, token_id: u256) -> u256;
     fn board_minted_state(self: @TContractState, token_id: u256) -> u256;
-
     fn board_current_state(self: @TContractState, token_id: u256) -> u256;
     fn update_board_current_state(ref self: TContractState, token_id: u256, new_state_board: u256);
+    fn get_minted_token_amount( self : @TContractState , token_id : u256 ) -> u256 ; 
+
 }
-
-
-
-
-
-
 
 
 #[starknet::contract]
@@ -43,7 +71,328 @@ mod MoveNFT {
     use core::nullable::match_nullable;
     use core::zeroable::Zeroable;
     use core::traits::Into;
-    // use ccnfts::chess_test::{searchMove, isLegalMove, applyMove, Move};
+    use ccnfts::chess_test::{searchMove, isLegalMove, applyMove, Move };
+
+
+    use super::IBoardNFTDispatcher;
+    use super::IBoardNFTDispatcherTrait;
+    use super::IAccountDispatcher;
+    use super::IAccountDispatcherTrait;
+
+
+    #[storage(Drop, Serde, Copy, starknet::store)]
+    struct Storage {
+        owners: LegacyMap::<u256, ContractAddress>,
+        balances: LegacyMap::<ContractAddress, u256>,
+        token_approvals: LegacyMap::<u256, ContractAddress>,
+        operator_approvals: LegacyMap::<(ContractAddress, ContractAddress), bool>,
+        count: u256, //Total number of NFTs minted
+        boardNFT: IBoardNFTDispatcher,
+        // making the mapping of the tokenbound account to the token id ;
+        
+        token_bound_account_to_tokenId: LegacyMap::<ContractAddress, u256>,
+        
+
+        token_id_to_move_state: LegacyMap::<u256, (u256, u256, u256)>,
+   
+
+        token_id_to_board : LegacyMap::<u256, u256> ,  
+
+
+        board_to_total_nft_move : LegacyMap::<u256, u256> , 
+        win_lose : LegacyMap::<u256, bool> , 
+
+
+    }
+
+
+
+
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Approval: Approval,
+        Transfer: Transfer,
+        ApprovalForAll: ApprovalForAll,
+        PlayMoveEvent : PlayMoveEvent ,
+    }
+
+
+    #[derive(Drop, starknet::Event)]
+    struct PlayMoveEvent {
+        caller: ContractAddress,
+        currentBoardState : u256 ,
+        newBoardState : u256 , 
+        move : u256 ,
+        token_id_move: u256,
+        token_id_board: u256,
+    }
+
+
+    #[constructor]
+    fn constructor(ref self: ContractState, _boardNFTAddress: ContractAddress) {
+        self.initConfig(_boardNFTAddress);
+    }
+
+    #[generate_trait]
+    impl ConfigImpl of ConfigTrait {
+        fn initConfig(ref self: ContractState, _boardNFTAddress: ContractAddress) {
+            let boardNFT = IBoardNFTDispatcher { contract_address: _boardNFTAddress };
+            self.boardNFT.write(boardNFT);
+        }
+    }
+
+
+    // we have also been working with the token bound account . 
+    // trate the token bound account connect the token bound account 
+    // execute the transaction 
+
+    // we also have to design the design that we can use the deploued contract from that 
+    // const BoardNFTContract : ContractAddress = 0x26087b21ffe0510269e562487d0f75f603718f5bc6646cac3ae02d187823d89 ; 
+
+    #[external(v0)]
+    #[generate_trait]
+    impl IBoardHelpfull of IBoardHelpfullTrait {
+        fn boardNFTgetname(self: @ContractState) -> felt252 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.getname()
+        }
+        fn boardNFTgetsymbol(self: @ContractState) -> felt252 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.getsymbol()
+        }
+        fn boardNFThardness(self: @ContractState, token_id: u256) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.hardness_Depth(token_id)
+        }
+        fn boardNFTboard_minted_state(self: @ContractState, token_id: u256) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.board_minted_state(token_id)
+        }
+        fn boardNFTboard_current_state(self: @ContractState, token_id: u256) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.board_current_state(token_id)
+        }
+        fn boardNFTupdate_board_current_state(
+            ref self: ContractState, token_id: u256, new_state_board: u256
+        ) {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.update_board_current_state(token_id, new_state_board)
+        }
+        ///private
+        fn get_token_Id(self: @ContractState, caller: ContractAddress) -> u256 {
+            let account = IAccountDispatcher { contract_address: caller };
+            let (_token_contract, token_id) = account.token();
+            token_id
+        }
+        fn get_amt_mint(self : @ContractState , token_id : u256 ) -> u256 {
+            let boardNFT = self.boardNFT.read();
+            boardNFT.get_minted_token_amount(token_id)
+        }
+       
+    }
+
+    #[external(v0)]
+    #[generate_trait]
+    impl IMoveImpl of ImoveTrait {
+
+     fn _play_move_chess(ref self : ContractState ,  _board: u256, _move: u256, _depth: u256) -> u256 {
+            // first we have to check the move is leagal or not 
+            if !isLegalMove(_board, _move) {
+            assert!(false, "illegal move");
+            }
+
+            // then we have to apply the move  
+            let mut board = applyMove(_board, _move);
+            ///// we have to take care of the ai move 
+            let (bestMove, isWhiteCheckmated) = searchMove(board, 1 );
+            /// if he does not  
+            if (bestMove == 0) {
+                /// reset the board 
+                /// means player has won  
+                ///  you won minted some large no of token to it ok 
+                
+                /// import the erc20 token 
+                
+                self.win_lose.write(_board, true) ;
+                /// minted winner nft to him 
+                
+            } else {
+                // ai move  
+                board = applyMove(board, bestMove);
+        
+                if (isWhiteCheckmated) {
+                    // player have lost 
+                    self.win_lose.write(_board, false) ;
+                    /// block him so that he cannot able to play the game 
+                  
+                }
+            }
+            board
+        }
+
+
+fn playmove(ref self: ContractState, _move: u256 , callerfrom : ContractAddress ) {
+            // let _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
+            let caller = callerfrom ; 
+            // through the caller we get the token id 
+            let tokenId =  self.get_token_Id(caller);
+            // through the tokenid we found the current board state ; 
+            let current_board_state = self.boardNFTboard_current_state(tokenId);
+            let depth = self.boardNFThardness(tokenId) ;
+            /// now it is ready for the chess moves and let do the usefull chessstuff 
+            
+            let new_chess_board_after_ai = self._play_move_chess(current_board_state, _move, depth);
+            //// now what we have to do is to update the current board state     
+            self.boardNFTupdate_board_current_state(tokenId, new_chess_board_after_ai);
+            // let mut current_all_board  : Array<u256> = self.tba_tokenId_to_move_tokenId.read(tokenId) ;
+            //   current_all_board.append(tokenId) ;
+            // now we have to save the whole the old board state and the move and the new board state
+
+            let nft_move_token_id = self.board_to_total_nft_move.read(tokenId) ; 
+            
+            self._safe_mint(caller, nft_move_token_id ); 
+
+            if self.win_lose.read(tokenId) {
+                // mint_token(caller, self.get_amt_mint(tokenId)) ;
+                // exit game 
+            } 
+
+        
+// gasless token cleaner 
+
+            self.token_id_to_board.write(nft_move_token_id, new_chess_board_after_ai);
+
+            self
+                .token_id_to_move_state
+                .write(nft_move_token_id, (current_board_state, _move, new_chess_board_after_ai));
+
+                self.board_to_total_nft_move.write(tokenId, nft_move_token_id + 1 ) ;
+
+            // want to map the tokenId = to the array of the token_id_move  
+
+            //// mint the nft to the token bound account 
+           
+            //// emiting 
+            /// new chess board 
+            /// move 
+
+            self
+                .emit(
+                    PlayMoveEvent {
+                        caller: caller, 
+                        currentBoardState: current_board_state,
+                        newBoardState: new_chess_board_after_ai,
+                        move: _move,
+                        token_id_move: nft_move_token_id,
+                        token_id_board: tokenId
+                    }
+                );
+        // i also want to create the mapping between the token id and the current board state and move it make it means just before , after and the move by him 
+        //token_id_to_board_state : LegacyMap::<u256, BoardState> ,
+
+        }
+    // fn mintMove(ref self: ContractState, _move: u256, _depth: u256) {
+    //     assert!(_depth >= 3 && _depth <= 10, "depth should be greater then 3 and less then 10");
+    //     // self.playmove(_depth);
+    //     self._safe_mint(get_caller_address(), 2);
+    // //after each times the nft is minted from the move it is transfered to the nft token bound account 
+    // }
+    // so i think we have to make the mapping of the tokenid and their current board state 
+    // and if the current board state is of checkmate and that token id is of the player then he can able to withdraw the token
+
+    // how we check that the the token id is from what 
+    // the caller id would then be what 
+
+    // fn withdrawToken(
+    //     ref self: ContractState
+    // ) { // check if the current board state is of check mate 
+    // // if the current board state is of check mate then the player can able to withdraw the token 
+    // // if the player is able to withdraw the token then the token is transfered to the token bound account 
+    // // if the player is not able to withdraw the token then the token is transfered to the contract account
+
+    // }
+
+    // fn makePuzzle(
+    //     ref self: ContractState, _board: u256, _depth: u256, _amount: u256
+    // ) { // want to min this board 
+    // // setting the depth also means what hard it would be 
+    // // if the player won then the token which is present in this nft will be gaven to the player  ; 
+    // // token is transfered to the tokenbound account 
+    // // mint nft 
+    // // deploy the token bound account 
+    // // transfer the chess token to the token bound account
+    // // make sure when the chess state is of check mate by the player then only he can able to withdraw the token 
+
+    // }
+
+    // mint nft 
+    // create the tba account 
+    // transfer the token to the tba account
+
+    // what information does it hold about the nft 
+
+    // fn can_onlymodify_their_tokenid(
+    //     self: @ContractState, caller: ContractAddress, _tokenid: u256
+    // ) {
+    //     let account = IAccountDispatcher { contract_address: caller };
+
+    //     let (token_contract_address, tokenid_from_tba) = account.token();
+
+    //     // now i want to check which token id the are manipulating 
+    //     assert!(tokenid_from_tba == _tokenid, "You can only modify your token id");
+    // }
+
+    // fn tokenboundmodifier(self: @ContractState, caller: ContractAddress) -> bool {
+    //     // so first we have to figure out what are the things we have to check 
+
+    //     // get the token id 
+    //     let account = IAccountDispatcher { contract_address: caller };
+    //     let (_token_contract, token_id) = account.token();
+
+    //     // token_bound_account == token_id
+    //     true
+    // }
+    }
+
+
+    ////// should one for the erc20 token contract 
+
+    ////// this must contain only about the token bound account details only //////// 
+
+    #[external(v0)]
+    #[generate_trait]
+    impl IAccountImpl of IAccountImplTrait {
+        //what would be the caller of this address 
+        // contain the nft token  
+
+        fn gettingTokenId(ref self: ContractState) -> u256 {
+            let caller = get_caller_address();
+            self.token_bound_account_to_tokenId.read(caller)
+        }
+
+
+        /// getting the caller address 
+        /// //. then initiate the account from it 
+        /// then call the token function 
+        /// which gave the tokenid , token contract address 
+
+        fn settokenId(ref self: ContractState) {
+            let caller = get_caller_address();
+
+            let account = IAccountDispatcher { contract_address: caller };
+            let (_token_contract, token_id) = account.token();
+
+            self.token_bound_account_to_tokenId.write(caller, token_id);
+        }
+    }
+
+
+    ////// this must containonly the nft related only ok  ////////
+    /// 
+    /// 
+    /// 
 
     const NAME: felt252 = 'Each Move NFT';
     const SYMBOL: felt252 = 'EMNFT';
@@ -54,42 +403,14 @@ mod MoveNFT {
     // Total number of NFTs that can be minted
     const MAX_SUPPLY: u256 = 50
         * 10; // maximum each chess has 50 moves so 50*10 = 500 nft can be minted 
-
     const ADMIN_ADDRESS: felt252 =
         0x004835541Fd87cdDBc3B48Ad08e53FfA1E4D55aB21a46900A969DF326C9276326;
-
-
     const VERSION_CODE: u256 = 202311150001001; /// YYYYMMDD000NONCE
-
     const INTERFACE_ERC165: felt252 = 0x01ffc9a7;
     const INTERFACE_ERC721: felt252 = 0x80ac58cd;
     const INTERFACE_ERC721_METADATA: felt252 = 0x5b5e139f;
     const INTERFACE_ERC721_RECEIVER: felt252 = 0x150b7a02;
 
-
-    use super::IBoardNFTDispatcher; 
-    use super::IBoardNFTDispatcherTrait;
-
-
-    #[storage]
-    struct Storage {
-        owners: LegacyMap::<u256, ContractAddress>,
-        balances: LegacyMap::<ContractAddress, u256>,
-        token_approvals: LegacyMap::<u256, ContractAddress>,
-        operator_approvals: LegacyMap::<(ContractAddress, ContractAddress), bool>,
-        count: u256, //Total number of NFTs minted
-        boardNFTAddress: ContractAddress, 
-        boardNFT: IBoardNFTDispatcher,
-
-    }
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        Approval: Approval,
-        Transfer: Transfer,
-        ApprovalForAll: ApprovalForAll
-    }
 
     #[derive(Drop, starknet::Event)]
     struct Approval {
@@ -112,120 +433,6 @@ mod MoveNFT {
         operator: ContractAddress,
         approved: bool
     }
-
-
-    #[constructor]
-    fn constructor(ref self: ContractState , _boardNFTAddress : ContractAddress ) {
-        self.initConfig(_boardNFTAddress) ;
-    }
-
-    #[generate_trait]
-    impl ConfigImpl of ConfigTrait {
-        fn initConfig(ref self: ContractState , _boardNFTAddress : ContractAddress) {
-
-            self.boardNFTAddress.write(_boardNFTAddress) ;
-
-            let boardNFT = IBoardNFTDispatcher{ contract_address: _boardNFTAddress } ;
-
-            self.boardNFT.write(boardNFT) ;
-
-        }
-
-    }
-
-
-
-    // we also have to design the design that we can use the deploued contract from that 
-    // const BoardNFTContract : ContractAddress = 0x26087b21ffe0510269e562487d0f75f603718f5bc6646cac3ae02d187823d89 ; 
-
-
-
-
-
-
-    #[external(v0)]
-    #[generate_trait]
-    impl IMoveImpl of ImoveTrait {
-
-
-
-        fn boardNFTgetname(self : @ContractState) -> felt252 {
-            let boardNFT = self.boardNFT.read();
-            boardNFT.getname() 
-        } 
-        fn boardNFTgetsymbol(self : @ContractState) -> felt252 {
-            let boardNFT = self.boardNFT.read();
-            boardNFT.getsymbol() 
-        }
-        fn boardNFThardness( self : @ContractState, token_id: u256) -> u256 {
-            let boardNFT = self.boardNFT.read();
-            boardNFT.hardness_Depth(token_id)
-        }
-        fn boardNFTboard_minted_state( self : @ContractState, token_id: u256) -> u256 {
-            let boardNFT = self.boardNFT.read();
-            boardNFT.board_minted_state(token_id)
-        }
-        fn boardNFTboard_current_state( self : @ContractState, token_id: u256) -> u256 {
-            let boardNFT = self.boardNFT.read();
-            boardNFT.board_current_state(token_id)
-        }
-        fn boardNFTupdate_board_current_state( ref self : ContractState, token_id: u256, new_state_board: u256) {
-            let boardNFT = self.boardNFT.read();
-            boardNFT.update_board_current_state(token_id, new_state_board)
-        }
-
-        fn playmove(ref self: ContractState, depth: u256) {
-            let board: u256 = 0x3256230011111100000000000000000099999900BCDECB000000001;
-        }
-
-        fn mintMove(ref self: ContractState, _move: u256, _depth: u256) {
-            assert!(_depth >= 3 && _depth <= 10, "depth should be greater then 3 and less then 10");
-            self.playmove(_depth);
-            self._safe_mint(get_caller_address(), 2);
-        //after each times the nft is minted from the move it is transfered to the nft token bound account 
-        }
-
-        // so i think we have to make the mapping of the tokenid and their current board state 
-        // and if the current board state is of checkmate and that token id is of the player then he can able to withdraw the token
-
-        // how we check that the the token id is from what 
-        // the caller id would then be what 
-
-        fn withdrawToken(ref self: ContractState) {// check if the current board state is of check mate 
-        // if the current board state is of check mate then the player can able to withdraw the token 
-        // if the player is able to withdraw the token then the token is transfered to the token bound account 
-        // if the player is not able to withdraw the token then the token is transfered to the contract account
-
-        }
-
-
-        fn makePuzzle(ref self: ContractState, _board: u256, _depth: u256, _amount: u256) {// want to min this board 
-        // setting the depth also means what hard it would be 
-        // if the player won then the token which is present in this nft will be gaven to the player  ; 
-        // token is transfered to the tokenbound account 
-        // mint nft 
-        // deploy the token bound account 
-        // transfer the chess token to the token bound account
-        // make sure when the chess state is of check mate by the player then only he can able to withdraw the token 
-
-        }
-        // mint nft 
-        // create the tba account 
-        // transfer the token to the tba account
-
-        // what information does it hold about the nft 
-
-
-
-    }  
-
-
-
-
-
-
-
-
     #[external(v0)]
     #[generate_trait]
     impl IERC721Impl of IERC721Trait {
@@ -235,7 +442,7 @@ mod MoveNFT {
 
         fn symbol(self: @ContractState) -> felt252 {
             SYMBOL
-        }       
+        }
 
         fn token_uri(self: @ContractState, token_id: u256) -> Array<felt252> {
             self.tokenURI(token_id)
@@ -322,14 +529,6 @@ mod MoveNFT {
         ) {
             self.safeTransferFrom(from, to, token_id, data)
         }
-   
-
-    }
-
-    // #################### ADMIN CONTROL FUNCTIONS #################### //
-    #[external(v0)]
-    #[generate_trait]
-    impl ERC721AdminImpl of ERC721AdminTrait {
         fn supportsInterface(self: @ContractState, interfaceID: felt252) -> bool {
             interfaceID == INTERFACE_ERC165
                 || interfaceID == INTERFACE_ERC721
@@ -386,31 +585,13 @@ mod MoveNFT {
             self.count.read()
         }
 
+        /////// useful
         fn tokenURI(self: @ContractState, token_id: u256) -> Array<felt252> {
-            let tokenFile: felt252 = token_id.try_into().unwrap();
-            let mut link = self._getBaseURI(); //BaseURI
-            //# Convert int id into Cairo ShortString(bytes) #
-            // revert number   12345 -> 54321, 1000 -> 0001
-            let mut revNumber: u256 = 0;
-            let mut currentInt: u256 = token_id * 10 + 1;
-            loop {
-                revNumber = revNumber * 10 + currentInt % 10;
-                currentInt = currentInt / 10_u256;
-                if currentInt < 1 {
-                    break;
-                };
-            };
-            //split chart
-            loop {
-                let lastChar: u256 = revNumber % 10_u256;
-                link.append(self._intToChar(lastChar)); // BaseURI + TOKEN_ID
-                revNumber = revNumber / 10_u256;
-                if revNumber < 2 { //~ = 1
-                    break;
-                };
-            };
-            link.append(0x2e6a736f6e); // BaseURI + TOKEN_ID + .json
-            link
+            let boardState =  self.token_id_to_board.read(token_id) ; 
+            let boardStateFelt  : felt252 = boardState.try_into().unwrap(); 
+            let mut uri = ArrayTrait::<felt252>::new(); 
+            uri.append(boardStateFelt);
+            uri 
         }
         fn balanceOf(self: @ContractState, account: ContractAddress) -> u256 {
             assert(account.is_non_zero(), 'ERC721: address zero');
@@ -420,6 +601,8 @@ mod MoveNFT {
             //In this example we use the json file of the first NFT in the collection, but you should customize it to return the correct file
             self.tokenURI(1)
         }
+
+
         // Airdrop
         fn airdrop(ref self: ContractState, to: ContractAddress, amount: u256) {
             // self._assert_admin();
@@ -472,12 +655,6 @@ mod MoveNFT {
             // Increase total nft
             self.count.write(startID + doneCount);
         }
-    }
-
-    // #################### PRIVATE Helper FUNCTION #################### //
-    #[external(v0)]
-    #[generate_trait]
-    impl ERC721HelperImpl of ERC721HelperTrait {
         fn svgimage(self: @ContractState, _tokenId: u256) -> Array<felt252> {
             let mut svg = ArrayTrait::<felt252>::new();
             let _tokenId: felt252 = _tokenId.try_into().unwrap();
@@ -569,7 +746,7 @@ mod MoveNFT {
         }
     }
 
-    // #################### Base Helper FUNCTION #################### //
+    //  #################### Base Helper FUNCTION #################### //
     #[generate_trait]
     impl BaseHelperImpl of BaseHelperTrait {
         // convert int short string .  eg: 1 -> 0x31 
@@ -602,13 +779,7 @@ mod MoveNFT {
         fn _felt252ToAddress(self: @ContractState, input: felt252) -> ContractAddress {
             input.try_into().unwrap()
         }
-    }
 
-    // #################### ADMIN CONTROL FUNCTION #################### //
-    #[external(v0)]
-    #[generate_trait]
-    impl ContractImpl of ContractTrait {
-        // return version code of contract
         fn versionCode(self: @ContractState) -> u256 {
             VERSION_CODE
         }

@@ -13,6 +13,8 @@ pub trait IBoardNFT<TContractState> {
 
     fn board_current_state(self: @TContractState, token_id: u256) -> u256;
     fn update_board_current_state(ref self: TContractState, token_id: u256, new_state_board: u256);
+    fn get_minted_token_amount( self : @TContractState , token_id : u256 ) -> u256 ; 
+
 }
 
 
@@ -75,10 +77,8 @@ mod BoardNFT {
         board_mintedstate: LegacyMap::<u256, u256>,
         //this may or may not be usefull but now keep it there 
         board_currentstate: LegacyMap::<u256, u256>,
-        // just for the now 
-        // this is the amount of token locked in this contract
-        amountlocked: LegacyMap::<u256, u256>,
         MintedAddress: ContractAddress,
+        board_amt : LegacyMap::<u256, u256> , 
     }
 
     #[event]
@@ -132,17 +132,18 @@ mod BoardNFT {
         ) { //Configure the contract based on parameters when deploying the contract if needed
             // i think this is the best place to mint the 10 nft as soon as it has been contract ; 
             // so mint the board nft 
-
-            self.makePuzzle(0x3256230011111100000000000000000099999900BCDECB000000001, 3);
-            self.makePuzzle(0x3256230010111100000000000190000099099900BCDECB000000001, 4);
-            self.makePuzzle(0x3256230010101100000100009190000009099900BCDECB000000001, 5);
-            self.makePuzzle(0x3256230010100100000100009199100009009900BCDECB000000001, 4);
-            self.makePuzzle(0x3256230010100100000000009199100009009000BCDECB000000001, 5);
-            self.makePuzzle(0x3256230010000100001000009199D00009009000BC0ECB000000001, 6);
-            self.makePuzzle(0x32502300100061000010000091990000090D9000BC0ECB000000001, 7);
-            self.makePuzzle(0x325023001006010000100D009199000009009000BC0ECB000000001, 6);
-            self.makePuzzle(0x305023001006010000100D0091992000090C9000B00ECB000000001, 8);
-            self.makePuzzle(0x3256230011111100000000000000000099999900BCDECB000000001, 9);
+            self.makePuzzle( 0x3256230011111100000000000000000099999900BCDECB000000001 , 3 , 3000);
+            self.makePuzzle( 0x3256230011111100000000000000000099999900BCDECB000000001 , 4 , 4000);
+            self.makePuzzle( 0x3256230011111100000000000000000099999900BCDECB000000001 , 4 , 4000);
+            // self.makePuzzle(0x3256230010000100001000009199D00009009000BC0ECB000000001, 4 , 4000);
+            // self.makePuzzle(0x3256230010000100001000009199D00009009000BC0ECB000000001, 5 , 5000);
+            // self.makePuzzle(0x3256230010000100001000009199D00009009000BC0ECB000000001, 4 , 4000);
+            // self.makePuzzle(0x3256230010100100000000009199100009009000BCDECB000000001, 5 , 5000);
+            // self.makePuzzle(0x3256230010000100001000009199D00009009000BC0ECB000000001, 6 , 6000);
+            // self.makePuzzle(0x32502300100061000010000091990000090D9000BC0ECB000000001, 7 , 7000);
+            // self.makePuzzle(0x325023001006010000100D009199000009009000BC0ECB000000001, 6,   6000);
+            // self.makePuzzle(0x305023001006010000100D0091992000090C9000B00ECB000000001, 8  , 8000  );
+            // self.makePuzzle(0x3256230011111100000000000000000099999900BCDECB000000001, 9 , 9000);
         }
     }
 
@@ -172,6 +173,10 @@ mod BoardNFT {
         ) {
             self.board_currentstate.write(token_id, new_state_board);
         }
+        fn get_minted_token_amount( self : @ContractState , token_id : u256 ) -> u256 {
+            self.board_amt.read(token_id)
+
+        }
     }
 
 
@@ -191,7 +196,7 @@ mod BoardNFT {
         // they to submit the some of the stark token and get chess token locked in this contract 
         // let take some hold the token deposition scene ok ;
 
-        fn makePuzzle(ref self: ContractState, _board: u256, _depth: u256) {
+        fn makePuzzle(ref self: ContractState, _board: u256, _depth: u256 , _amount : u256) {
             // want to min this board 
             // setting the depth also means what hard it would be 
             // if the player won then the token which is present in this nft will be gaven to the player  ; 
@@ -201,17 +206,18 @@ mod BoardNFT {
             // transfer the chess token to the token bound account
             // make sure when the chess state is of check mate by the player then only he can able to withdraw the token 
 
+            // tokenid =>  board 
             let token_id = self.count.read();
-            let _amount = 20;
-            self.amountlocked.write(token_id, _amount);
             self.ai_hard.write(token_id, _depth);
             self.board_mintedstate.write(token_id, _board);
             self.board_currentstate.write(token_id, _board);
             self._safe_mint(self.MintedAddress.read(), token_id);
             self.count.write(token_id + 1);
+            self.board_amt.write(token_id, _amount);
+
         }
 
-
+        // this should be image 
         fn tokenURI(self: @ContractState, token_id: u256) -> Array<felt252> {
             let tokenFile: felt252 = token_id.try_into().unwrap();
             let mut link = self._getBaseURI(); //BaseURI
@@ -237,6 +243,7 @@ mod BoardNFT {
             };
             link.append(0x2e6a736f6e); // BaseURI + TOKEN_ID + .json
             link
+
         }
 
         // Compatibility

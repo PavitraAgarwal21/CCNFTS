@@ -33,8 +33,7 @@ pub struct MoveArray {
 }
 
 fn insert(ref arrst: ArrayStack, index: usize, value: u256) {
-    if (index >= arrst.size) {
-        println!("Array out of bound");
+    if (index >= arrst.size) {// println!("Array out of bound");
     }
     // println!("{:?}", arrst.main_stack); //
     let mut i = 0;
@@ -72,6 +71,9 @@ fn newAS() -> ArrayStack {
 //    such as move generation and evaluation.   //
 //                                              //
 //////////////////////////////////////////////////
+/// 
+/// 
+
 pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
     let mut moves = generateMoves(_board);
     if (get(@moves, 0) == 0) {
@@ -107,12 +109,12 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {
         return 0;
     }
-    println!(" board {} depth {}", _board, _depth);
+    // println!(" board {} depth {}", _board, _depth);
     let mut moves = generateMoves(_board);
     // if (moves(0) == 0) {
     //     return 0;
     // }
-    println!("moves {:?}", get(@moves, 0));
+    // println!("moves {:?}", get(@moves, 0));
     if (get(@moves, 0) == 0) {
         return 0;
     }
@@ -125,7 +127,7 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
         let mut movePartition = get(@moves, i);
         while movePartition != 0 {
             currentScore = evaluateMove(_board, movePartition & 0xFFF);
-            println!("evaluate is corrected ");
+            // println!("evaluate is corrected ");
             if (currentScore > bestScore) {
                 bestScore = currentScore;
                 bestMove = movePartition & 0xFFF;
@@ -162,14 +164,14 @@ fn evaluateMove(_board: u256, _move: u256) -> i128 {
     let pieceAtToIndex: u256 = (U256BitShift::shr(_board, (U256BitShift::shl(_move & 0x3F, 2)))
         & 7);
 
-    println!(
-        " move - {} fromIndex - {}  toIndex - {} pieceAtFromIndex - {} pieceAtToIndex - {}  ",
-        _move,
-        fromIndex,
-        toIndex,
-        pieceAtFromIndex,
-        pieceAtToIndex
-    );
+    // println!(
+    //     " move - {} fromIndex - {}  toIndex - {} pieceAtFromIndex - {} pieceAtToIndex - {}  ",
+    //     _move,
+    //     fromIndex,
+    //     toIndex,
+    //     pieceAtFromIndex,
+    //     pieceAtToIndex
+    // );
 
     let mut oldPst: u256 = 0;
     let mut newPst: u256 = 0;
@@ -680,18 +682,22 @@ pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u
     }
     return true;
 }
+
+// 0x3256230011111100000000000000000099999900BCDECB000000001
+// 0x3252562023000111111100000000000000000099999900BCDECB000000001
 pub fn working_with_array() {
     let mut _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
-    if (isLegalMove(_board, 1373)) {
-        println!("Legal Move");
-        // println!("before move {}" , _board) ;
-        let mut new_board = applyMove(_board, 1373);
-        //    println!("after move board {}", new_board) ;
-        println!("new board   {}", new_board);
-        let (bestmove, iswhitecheckmated) = searchMove(new_board, 3);
-        println!("best move {} iswhitecheckmated {}", bestmove, iswhitecheckmated);
-
-        new_board = applyMove(new_board, bestmove);
-        println!("_board  after ai move  {} ", new_board);
-    }
+// if (isLegalMove(_board, 1373 )) {
+//     // println!("Legal Move");
+//     // println!("before move {}" , _board) ;
+//     let mut new_board = applyMove(_board, 1373);
+//     //    println!("after move board {}", new_board) ;
+//     // println!("new board   {}", new_board);
+//     let (bestmove, iswhitecheckmated) = searchMove(new_board, 3);
+//     // println!("best move {} iswhitecheckmated {}", bestmove, iswhitecheckmated);
+//     new_board = applyMove(new_board, bestmove);
+//     // println!("_board  after ai move  {} ", new_board);
+// }
+// println!("new board {}", _play_move_chess(_board , 1373 , 3));
 }
+

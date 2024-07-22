@@ -185,7 +185,9 @@ mod ERC721Contract {
         // how we check that the the token id is from what 
         // the caller id would then be what 
 
-        fn withdrawToken(ref self: ContractState) {// check if the current board state is of check mate 
+        fn withdrawToken(
+            ref self: ContractState
+        ) { // check if the current board state is of check mate 
         // if the current board state is of check mate then the player can able to withdraw the token 
         // if the player is able to withdraw the token then the token is transfered to the token bound account 
         // if the player is not able to withdraw the token then the token is transfered to the contract account
@@ -193,7 +195,9 @@ mod ERC721Contract {
         }
 
 
-        fn makePuzzle(ref self: ContractState, _board: u256, _depth: u256, _amount: u256) {// want to min this board 
+        fn makePuzzle(
+            ref self: ContractState, _board: u256, _depth: u256, _amount: u256
+        ) { // want to min this board 
         // setting the depth also means what hard it would be 
         // if the player won then the token which is present in this nft will be gaven to the player  ; 
         // token is transfered to the tokenbound account 
