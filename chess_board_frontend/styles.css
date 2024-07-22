@@ -1,0 +1,62 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #34b5eb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.board-container {
+    display: flex;
+    align-items: center;
+}
+
+.chessboard {
+    display: grid;
+    grid-template-columns: repeat(6, 60px);
+    grid-template-rows: repeat(6, 60px);
+    border: 2px solid #333;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.square {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    background-color: #f0d9b5; /* Light cream color */
+}
+
+.square.dark {
+    background-color: #b58863; /* Brown color */
+}
+
+.captured-container {
+    display: flex;
+    flex-direction: column;
+    margin: 0 10px;
+}
+
+.captured-container h3 {
+    text-align: center;
+}
+
+.captured-pieces {
+    display: flex;
+    flex-wrap: wrap;
+    width: 60px; /* Adjust width if necessary */
+}
+
+.captured-pieces div {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
