@@ -14,7 +14,6 @@ const initialBoard = [
 
 let selectedPiece = null;
 let boardState = initialBoard.map(row => row.slice());
-let currentPlayer = 'white'; // Track which player's turn it is
 
 const renderBoard = () => {
     board.innerHTML = '';
@@ -43,8 +42,7 @@ const handleSquareClick = (event) => {
         const fromCol = selectedPiece.col;
         const capturedPiece = boardState[row][col];
 
-        // Check if the move is valid
-        if (boardState[row][col] === '·' || (capturedPiece !== '·' && isOpponentPiece(capturedPiece))) {
+        if (boardState[row][col] === '·' || capturedPiece !== '·') {
             if (capturedPiece !== '·') {
                 capturePiece(capturedPiece);
             }
@@ -52,24 +50,13 @@ const handleSquareClick = (event) => {
             boardState[row][col] = selectedPiece.piece;
             boardState[fromRow][fromCol] = '·';
             selectedPiece = null;
-            currentPlayer = currentPlayer === 'white' ? 'black' : 'white'; // Switch player turn
             renderBoard();
         }
     } else {
-        if (boardState[row][col] !== '·' && isPieceOfCurrentPlayer(boardState[row][col])) {
+        if (boardState[row][col] !== '·') {
             selectedPiece = { piece: boardState[row][col], row, col };
         }
     }
-};
-
-const isPieceOfCurrentPlayer = (piece) => {
-    return ('♙♘♗♕♔♜'.includes(piece) && currentPlayer === 'white') ||
-           ('♟♝♞♛♚♜'.includes(piece) && currentPlayer === 'black');
-};
-
-const isOpponentPiece = (piece) => {
-    return ('♙♘♗♕♔♜'.includes(piece) && currentPlayer === 'black') ||
-           ('♟♝♞♛♚♜'.includes(piece) && currentPlayer === 'white');
 };
 
 const capturePiece = (piece) => {
