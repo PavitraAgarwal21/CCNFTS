@@ -1,0 +1,54 @@
+/* styles/Chessboard.module.css */
+
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Full viewport height */
+    background-color: #f0f0f0; /* Light background color for contrast */
+    margin: 0;
+  }
+  
+  .boardWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  .chessboard {
+    display: grid;
+    grid-template-columns: repeat(6, 60px);
+    grid-template-rows: repeat(6, 60px);
+    border: 4px solid #333;
+    border-radius: 5px;
+    background: #eee;
+    width: 360px; /* 6 columns x 60px each */
+    height: 360px; /* 6 rows x 60px each */
+  }
+  
+  .square {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .square:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  .square.dark {
+    background-color: #8e8e8e;
+  }
+  
+  .moveContainer {
+    margin-top: 20px;
+    font-size: 18px;
+    text-align: center;
+  }
