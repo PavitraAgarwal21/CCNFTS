@@ -1,19 +1,19 @@
 const board = document.getElementById('chessboard');
-const capturedWhiteContainer = document.getElementById('captured-white-pieces');
-const capturedBlackContainer = document.getElementById('captured-black-pieces');
+const lastMoveDisplay = document.getElementById('last-move');
 const boardSize = 6;
 
 const initialBoard = [
-    ['♗', '♘', '♕', '♔', '♘', '♗'],
-    ['♙', '♙', '♙', '♙', '♙', '♙'],
-    ['·', '·', '·', '·', '·', '·'],
-    ['·', '·', '·', '·', '·', '·'],
+    ['♜', '♝', '♛', '♚', '♝', '♜'],
     ['♟', '♟', '♟', '♟', '♟', '♟'],
-    ['♜', '♝', '♛', '♚', '♝', '♜']
+    ['·', '·', '·', '·', '·', '·'],
+    ['·', '·', '·', '·', '·', '·'],
+    ['♙', '♙', '♙', '♙', '♙', '♙'],
+    ['♗', '♘', '♕', '♔', '♘', '♗']
 ];
 
 let selectedPiece = null;
 let boardState = initialBoard.map(row => row.slice());
+let currentPlayer = 'white';
 
 const renderBoard = () => {
     board.innerHTML = '';
@@ -40,31 +40,33 @@ const handleSquareClick = (event) => {
     if (selectedPiece) {
         const fromRow = selectedPiece.row;
         const fromCol = selectedPiece.col;
-        const capturedPiece = boardState[row][col];
 
-        if (boardState[row][col] === '·' || capturedPiece !== '·') {
-            if (capturedPiece !== '·') {
-                capturePiece(capturedPiece);
-            }
-
+        if (boardState[row][col] === '·' || isOpponentPiece(boardState[row][col])) {
             boardState[row][col] = selectedPiece.piece;
             boardState[fromRow][fromCol] = '·';
+
+            const move = (fromRow * boardSize + fromCol) << 6 | (row * boardSize + col);
+            lastMoveDisplay.textContent = move;
+
             selectedPiece = null;
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
             renderBoard();
         }
     } else {
-        if (boardState[row][col] !== '·') {
+        if (boardState[row][col] !== '·' && isPieceOfCurrentPlayer(boardState[row][col])) {
             selectedPiece = { piece: boardState[row][col], row, col };
         }
     }
 };
 
-const capturePiece = (piece) => {
-    if ('♙♘♗♕♔♜'.includes(piece)) {
-        capturedWhiteContainer.innerHTML += `<div>${piece}</div>`;
-    } else {
-        capturedBlackContainer.innerHTML += `<div>${piece}</div>`;
-    }
+const isPieceOfCurrentPlayer = (piece) => {
+    return ('♙♘♗♕♔♜'.includes(piece) && currentPlayer === 'white') ||
+           ('♟♝♞♛♚♜'.includes(piece) && currentPlayer === 'black');
+};
+
+const isOpponentPiece = (piece) => {
+    return ('♙♘♗♕♔♜'.includes(piece) && currentPlayer === 'black') ||
+           ('♟♝♞♛♚♜'.includes(piece) && currentPlayer === 'white');
 };
 
 renderBoard();
