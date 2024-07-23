@@ -1,34 +1,122 @@
 // components/Chessboard.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styles from './Chessboard.module.css';
+import { Contract, RpcProvider } from "starknet";
+import { ConnectedStarknetWindowObject } from "get-starknet-core";
+import { TokenboundConnector, TokenBoundModal, useTokenBoundModal } from "tokenbound-connector";
+import { ABI } from "../abis/abi";
+const contractAddress = "0x079eeee7d9fe0d1811472d59d4dd239b68fdf0b15530851acd80d4c683fa0a75"; 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const Chessboard = () => {
+  const provider = new RpcProvider({
+    nodeUrl: "https://starknet-sepolia.public.blastapi.io/rpc/v0_7",
+  });
+  const [connection, setConnection] = useState<ConnectedStarknetWindowObject>();
+  const [account, setAccount] = useState();
+  const [address, setAddress] = useState("");
+  const [retrievedValue, setRetrievedValue] = useState("");
   const [boardState, setBoardState] = useState<string[][]>([]);
   const [selectedPiece, setSelectedPiece] = useState<{ piece: string, row: number, col: number } | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState('white');
-  const [lastMove, setLastMove] = useState('');
+  const moveRef = useRef<number>(0);
+
+  const {
+    isOpen,
+    openModal,
+    closeModal,
+    value,
+    selectedOption,
+    handleChange,
+    handleChangeInput,
+    resetInputValues,
+  } = useTokenBoundModal();
+
+  const tokenbound = new TokenboundConnector({
+    tokenboundAddress: value,
+    parentAccountId: selectedOption,
+  });
+
+  const connectTBA = async () => {
+    const connection = await tokenbound.connect();
+    closeModal();
+    resetInputValues();
+
+    if (connection && connection.isConnected) {
+      setConnection(connection);
+      setAccount(connection.account);
+      setAddress(connection.selectedAddress);
+    }
+  };
+
+  const disconnectTBA = async () => {
+    await tokenbound.disconnect();
+    setConnection(undefined);
+    setAccount(undefined);
+    setAddress("");
+  };
+
+  const playChess = async () => {
+    try {
+      const contract = new Contract(ABI, contractAddress, account).typedv2(ABI);
+      let move = playMove();
+      let val = await contract.playmove(move); 
+      console.log(val);
+      await sleep(15000); // Wait for 5 seconds
+      refresh() ; 
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const refresh = async () => {
+    try {
+      sleep(2000); // Wait for 5 seconds
+      const contract = new Contract(ABI, contractAddress, provider).typedv2(ABI);
+      let new_board_state = await contract.getUpdatedBoardStatepublic(address);
+      console.log(new_board_state); 
+      const hexValue = new_board_state.toString(16).toUpperCase().padStart(64, '0');
+      const initialBoard = hexToBoard(hexValue);
+      setBoardState(initialBoard);
+      setSelectedPiece(null);
+      setCurrentPlayer('white');
+      moveRef.current = 0;
+    } catch (error) {
+      console.log("Error in getUpdatedState");
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
+    refresh();
+    resetBoard();
+  }, []);
+
+  const resetBoard = () => {
     const number = BigInt('331315573416267984596543414422294546879883252852981354553476644865');
     const hexValue = number.toString(16).toUpperCase().padStart(64, '0');
     const initialBoard = hexToBoard(hexValue);
     setBoardState(initialBoard);
-  }, []);
+    setSelectedPiece(null);
+    setCurrentPlayer('white');
+    moveRef.current = 0;
+  };
 
-  const hexToBoard = (hexStr : string) => {
+  const hexToBoard = (hexStr: string) => {
+
     const pieceMap: { [key: string]: string } = {
-      '0': '·',
-      '1': '♙',
-      '2': '♘',
-      '3': '♗',
-      '4': '♖',
-      '5': '♕',
-      '6': '♔',
-      '9': '♟',
-      'B': '♜',
-      'C': '♝',
-      'D': '♛',
-      'E': '♚',
+   '0': '·',  // Empty
+      '1': '♟',  // White Pawn
+      '2': '♝',  // White Knight
+      '3': '♜',  // Unused (originally White Bishop)
+      '4': '.',   // White Rook
+      '5': '♛',  // White Queen
+      '6': '♚',  // White King
+      '9': '♙',  // Black Pawn
+      'B': '♖',  // Black Rook
+      'C': '♘',  // Black Bishop
+      'D': '♕',  // Black Queen
+      'E': '♔',  // Black King
     };
 
     if (hexStr.startsWith('0x')) {
@@ -50,7 +138,6 @@ const Chessboard = () => {
     }
 
     const trimmedBoard = board.slice(1, 7).map(row => row.slice(1, 7));
-    trimmedBoard.reverse();
     return trimmedBoard;
   };
 
@@ -70,26 +157,6 @@ const Chessboard = () => {
     return move;
   };
 
-  const decodeMove = (move: number) => {
-    const toIndex8x8 = move & 0x3F;
-    const fromIndex8x8 = (move >> 6) & 0x3F;
-    const Mapping = [
-      54, 53, 52, 51, 50, 49,
-      46, 45, 44, 43, 42, 41,
-      38, 37, 36, 35, 34, 33,
-      30, 29, 28, 27, 26, 25,
-      22, 21, 20, 19, 18, 17,
-      14, 13, 12, 11, 10, 9
-    ];
-
-    const fromRow = Math.floor(Mapping.indexOf(fromIndex8x8) / 6);
-    const fromCol = Mapping.indexOf(fromIndex8x8) % 6;
-    const toRow = Math.floor(Mapping.indexOf(toIndex8x8) / 6);
-    const toCol = Mapping.indexOf(toIndex8x8) % 6;
-
-    return `(${fromRow}, ${fromCol}) -> (${toRow}, ${toCol})`;
-  };
-
   const handleSquareClick = (row: number, col: number) => {
     if (selectedPiece) {
       const { piece, row: fromRow, col: fromCol } = selectedPiece;
@@ -99,8 +166,8 @@ const Chessboard = () => {
         newBoardState[fromRow][fromCol] = '·';
         setBoardState(newBoardState);
 
-        const move = calculateMove(fromRow, fromCol, row, col);
-        setLastMove(`Move: ${move} | Decoded: ${decodeMove(move)}`);
+        const newMove = calculateMove(fromRow, fromCol, row, col);
+        moveRef.current = newMove;
 
         setSelectedPiece(null);
         setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
@@ -113,13 +180,18 @@ const Chessboard = () => {
   };
 
   const isPieceOfCurrentPlayer = (piece: string) => {
-    return ('♙♘♗♕♔♜'.includes(piece) && currentPlayer === 'white') ||
+    return ('♙♘♗♕♔♖'.includes(piece) && currentPlayer === 'white') ||
            ('♟♝♞♛♚♜'.includes(piece) && currentPlayer === 'black');
   };
 
-  const isOpponentPiece = (piece : string ) => {
-    return ('♙♘♗♕♔♜'.includes(piece) && currentPlayer === 'black') ||
+  const isOpponentPiece = (piece: string) => {
+    return ('♙♘♗♕♔♖'.includes(piece) && currentPlayer === 'black') ||
            ('♟♝♞♛♚♜'.includes(piece) && currentPlayer === 'white');
+  };
+
+  const playMove = () => {
+    console.log(`Encoded Move: ${moveRef.current}`);
+    return moveRef.current; 
   };
 
   return (
@@ -139,9 +211,29 @@ const Chessboard = () => {
           )}
         </div>
         <div className={styles.moveContainer}>
-          <h3>Last Move: <span id="last-move">{lastMove}</span></h3>
+          <button onClick={resetBoard}>Reset Board</button>
+          <div>         
+             <button onClick={playChess}>Play Chess</button>
+          </div>
+          <button onClick={refresh}>Get Updated State</button>
         </div>
       </div>
+      {!connection ? (
+        <button className="button" onClick={openModal}>
+          Connect Wallet
+        </button>
+      ) : (
+        <button onClick={  disconnectTBA}>Disconnect Wallet</button>
+      )}
+    <TokenBoundModal
+          isOpen={isOpen}
+          closeModal={closeModal}
+          value={value}
+          selectedOption={selectedOption}
+          handleChange={handleChange}
+          handleChangeInput={handleChangeInput}
+          onConnect={connectTBA}
+        />
     </div>
   );
 };

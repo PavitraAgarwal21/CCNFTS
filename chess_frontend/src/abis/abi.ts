@@ -116,6 +116,22 @@ export const ABI = [
     "state_mutability": "view"
   },
   {
+    "name": "get_amt_mint",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "token_id",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::integer::u256"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
     "name": "_play_move_chess",
     "type": "function",
     "inputs": [
@@ -137,7 +153,7 @@ export const ABI = [
         "type": "core::integer::u256"
       }
     ],
-    "state_mutability": "view"
+    "state_mutability": "external"
   },
   {
     "name": "playmove",
@@ -152,15 +168,20 @@ export const ABI = [
     "state_mutability": "external"
   },
   {
-    "name": "gettingTokenId",
+    "name": "getUpdatedBoardStatepublic",
     "type": "function",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "tokenboundaccount",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
     "outputs": [
       {
         "type": "core::integer::u256"
       }
     ],
-    "state_mutability": "external"
+    "state_mutability": "view"
   },
   {
     "name": "settokenId",
@@ -809,26 +830,8 @@ export const ABI = [
     ]
   },
   {
-    "name": "ccnfts::MoveNFT::MoveNFT::MoveState",
-    "type": "struct",
-    "members": [
-      {
-        "name": "before_move",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "move",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "after_move",
-        "type": "core::integer::u256"
-      }
-    ]
-  },
-  {
     "kind": "struct",
-    "name": "ccnfts::MoveNFT::MoveNFT::GetUsefullData",
+    "name": "ccnfts::MoveNFT::MoveNFT::PlayMoveEvent",
     "type": "event",
     "members": [
       {
@@ -838,8 +841,18 @@ export const ABI = [
       },
       {
         "kind": "data",
-        "name": "move_state",
-        "type": "ccnfts::MoveNFT::MoveNFT::MoveState"
+        "name": "currentBoardState",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "newBoardState",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "move",
+        "type": "core::integer::u256"
       },
       {
         "kind": "data",
@@ -875,8 +888,8 @@ export const ABI = [
       },
       {
         "kind": "nested",
-        "name": "GetUsefullData",
-        "type": "ccnfts::MoveNFT::MoveNFT::GetUsefullData"
+        "name": "PlayMoveEvent",
+        "type": "ccnfts::MoveNFT::MoveNFT::PlayMoveEvent"
       }
     ]
   }
