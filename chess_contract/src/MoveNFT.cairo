@@ -233,9 +233,9 @@ mod MoveNFT {
         }
 
 
-fn playmove(ref self: ContractState, _move: u256 , callerfrom : ContractAddress ) {
+fn playmove(ref self: ContractState, _move: u256  ) {
             // let _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
-            let caller = callerfrom ; 
+            let caller = get_caller_address() ; //  callerfrom ; 
             // through the caller we get the token id 
             let tokenId =  self.get_token_Id(caller);
             // through the tokenid we found the current board state ; 
@@ -291,7 +291,20 @@ fn playmove(ref self: ContractState, _move: u256 , callerfrom : ContractAddress 
                 );
         // i also want to create the mapping between the token id and the current board state and move it make it means just before , after and the move by him 
         //token_id_to_board_state : LegacyMap::<u256, BoardState> ,
+        }
 
+        fn getUpdatedBoardStatepublic(self: @ContractState,  tokenboundaccount : ContractAddress ) -> u256 {
+            
+
+            let tokenId =  self.get_token_Id(tokenboundaccount);
+            // through the tokenid we found the current board state ; 
+            let current_board_state = self.boardNFTboard_current_state(tokenId);
+
+            return current_board_state ;
+            // let caller = get_caller_address();
+            // self.token_bound_account_to_tokenId.read(caller)
+            // let boardNFT = self.boardNFT.read();
+            // boardNFT.board_current_state(token_id)
         }
     // fn mintMove(ref self: ContractState, _move: u256, _depth: u256) {
     //     assert!(_depth >= 3 && _depth <= 10, "depth should be greater then 3 and less then 10");
@@ -367,10 +380,10 @@ fn playmove(ref self: ContractState, _move: u256 , callerfrom : ContractAddress 
         //what would be the caller of this address 
         // contain the nft token  
 
-        fn gettingTokenId(ref self: ContractState) -> u256 {
-            let caller = get_caller_address();
-            self.token_bound_account_to_tokenId.read(caller)
-        }
+        // fn gettingTokenId(ref self: ContractState) -> u256 {
+        //     let caller = get_caller_address();
+        //     self.token_bound_account_to_tokenId.read(caller)
+        // }
 
 
         /// getting the caller address 
