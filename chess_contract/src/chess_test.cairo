@@ -1,12 +1,24 @@
 use core::option::OptionTrait;
 use alexandria_data_structures::array_ext::ArrayTraitExt;
 use core::array::ArrayTrait;
-use alexandria_math::{U128BitShift, U256BitShift};
+use alexandria_math::{U128BitShift, U256BitShift , U16BitShift};
 use alexandria_data_structures::vec::{Felt252Vec, VecTrait};
 use core::traits::TryInto;
 // let val = U256BitShift::shl(vale, 3); // right shift  multiply << 128 
 // let valr =U256BitShift::shr(vale, 3); // left shift  divison >>  2
 const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+pub fn encodeTokenId(num1 : u256  , num2 : u256)  -> u256 {
+    if (num1 < 0 || num1 > 63 || num2 < 0 || num2 > 63) {
+       assert!(false, "supply is over");
+    }
+       U256BitShift::shr(num1, 8 ) | num2 
+  }
+
+  pub fn calculate_move_enoded( _depth : u256 , _move : u256 , _bestMove : u256 ) -> u256 {
+     U256BitShift::shl(_depth, 24 ) |  U256BitShift::shl(_move , 12 ) | _bestMove
+  }
+
 //////////////////////////////////////////////////
 //                                              //
 //  Library: ArrayStack                         //
@@ -104,6 +116,7 @@ pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
     };
     return (bestMove, bestScore > 1_260);
 }
+
 
 pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {

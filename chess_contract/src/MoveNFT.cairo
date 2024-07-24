@@ -55,10 +55,12 @@ pub trait IBoardNFT<TContractState> {
     fn getsymbol(self: @TContractState) -> felt252;
     fn hardness_Depth(self: @TContractState, token_id: u256) -> u256;
     fn board_minted_state(self: @TContractState, token_id: u256) -> u256;
+
     fn board_current_state(self: @TContractState, token_id: u256) -> u256;
     fn update_board_current_state(ref self: TContractState, token_id: u256, new_state_board: u256);
     fn get_minted_token_amount( self : @TContractState , token_id : u256 ) -> u256 ; 
-
+    fn _play_move_chess(ref self : TContractState ,  _board: u256, _move: u256, _depth: u256 , tokenId : u256 , caller : ContractAddress  ) -> u256 ;
+     
 }
 
 
@@ -190,47 +192,51 @@ mod MoveNFT {
             let boardNFT = self.boardNFT.read();
             boardNFT.get_minted_token_amount(token_id)
         }
-       
+       fn _play_move(ref self : ContractState ,  _board: u256, _move: u256, _depth: u256 , tokenId : u256 , caller : ContractAddress  ) -> u256 {
+        let boardNFT = self.boardNFT.read();
+        let board = boardNFT._play_move_chess(_board, _move, _depth , tokenId , caller) ; 
+        board 
+       }
     }
 
     #[external(v0)]
     #[generate_trait]
     impl IMoveImpl of ImoveTrait {
 
-     fn _play_move_chess(ref self : ContractState ,  _board: u256, _move: u256, _depth: u256) -> u256 {
-            // first we have to check the move is leagal or not 
-            if !isLegalMove(_board, _move) {
-            assert!(false, "illegal move");
-            }
+//      fn _play_move_chess(ref self : ContractState ,  _board: u256, _move: u256, _depth: u256) -> u256 {
+//             // first we have to check the move is leagal or not 
+//             if !isLegalMove(_board, _move) {
+//             assert!(false, "illegal move");
+//             }
 
-            // then we have to apply the move  
-            let mut board = applyMove(_board, _move);
-            ///// we have to take care of the ai move 
-            let (bestMove, isWhiteCheckmated) = searchMove(board, 1 );
-            /// if he does not  
-            if (bestMove == 0) {
-                /// reset the board 
-                /// means player has won  
-                ///  you won minted some large no of token to it ok 
+//             // then we have to apply the move  
+//             let mut board = applyMove(_board, _move);
+//             ///// we have to take care of the ai move 
+//             let (bestMove, isWhiteCheckmated) = searchMove(board, 1 );
+//             /// if he does not  
+//             if (bestMove == 0) {
+//                 /// reset the board 
+//                 /// means player has won  
+//                 ///  you won minted some large no of token to it ok 
                 
-                /// import the erc20 token 
+//                 /// import the erc20 token 
                 
-                self.win_lose.write(_board, true) ;
-                /// minted winner nft to him 
+//                 self.win_lose.write(_board, true) ;
+//                 /// minted winner nft to him 
                 
-            } else {
-                // ai move  
-                board = applyMove(board, bestMove);
+//             } else {
+//                 // ai move  
+//                 board = applyMove(board, bestMove);
         
-                if (isWhiteCheckmated) {
-                    // player have lost 
-                    self.win_lose.write(_board, false) ;
-                    /// block him so that he cannot able to play the game 
+//                 if (isWhiteCheckmated) {
+//                     // player have lost 
+//                     self.win_lose.write(_board, false) ;
+//                     /// block him so that he cannot able to play the game 
                   
-                }
-            }
-            board
-        }
+//                 }
+//             }
+//             board
+// }
 
 
 fn playmove(ref self: ContractState, _move: u256  ) {
@@ -242,8 +248,7 @@ fn playmove(ref self: ContractState, _move: u256  ) {
             let current_board_state = self.boardNFTboard_current_state(tokenId);
             let depth = self.boardNFThardness(tokenId) ;
             /// now it is ready for the chess moves and let do the usefull chessstuff 
-            
-            let new_chess_board_after_ai = self._play_move_chess(current_board_state, _move, depth);
+            let new_chess_board_after_ai = self._play_move(current_board_state, _move, depth , tokenId , caller) ;
             //// now what we have to do is to update the current board state     
             self.boardNFTupdate_board_current_state(tokenId, new_chess_board_after_ai);
             // let mut current_all_board  : Array<u256> = self.tba_tokenId_to_move_tokenId.read(tokenId) ;

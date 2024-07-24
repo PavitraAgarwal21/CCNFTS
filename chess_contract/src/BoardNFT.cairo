@@ -4,6 +4,35 @@
 // only the person who has the token nft can able to withdraw the token . 
 // using the predefined contract and the ai can only able to mint the token .  
 
+use starknet::ContractAddress; 
+use starknet::ClassHash;
+use starknet::account::Call;
+
+
+trait ERC20ABI {
+    // IERC20
+    fn total_supply() -> u256;
+    fn balance_of(account: ContractAddress) -> u256;
+    fn allowance(owner: ContractAddress, spender: ContractAddress) -> u256;
+    fn transfer(recipient: ContractAddress, amount: u256) -> bool;
+    fn transfer_from(
+        sender: ContractAddress, recipient: ContractAddress, amount: u256
+    ) -> bool;
+    fn approve(spender: ContractAddress, amount: u256) -> bool;
+
+    // IERC20Metadata
+    fn name() -> ByteArray;
+    fn symbol() -> ByteArray;
+    fn decimals() -> u8;
+
+    // IERC20Camel
+    fn totalSupply() -> u256;
+    fn balanceOf(account: ContractAddress) -> u256;
+    fn transferFrom(
+        sender: ContractAddress, recipient: ContractAddress, amount: u256
+    ) -> bool;
+}
+
 #[starknet::interface]
 pub trait IBoardNFT<TContractState> {
     fn getname(self: @TContractState) -> felt252;
@@ -14,8 +43,34 @@ pub trait IBoardNFT<TContractState> {
     fn board_current_state(self: @TContractState, token_id: u256) -> u256;
     fn update_board_current_state(ref self: TContractState, token_id: u256, new_state_board: u256);
     fn get_minted_token_amount( self : @TContractState , token_id : u256 ) -> u256 ; 
-
+    fn get_token_Id(self: @TContractState, caller: ContractAddress) -> u256 ; 
+    fn _play_move_chess(ref self : TContractState ,  _board: u256, _move: u256, _depth: u256 , tokenId : u256  ) -> (u256 , u256) ; 
+        fn playmove(ref self: TContractState, _move: u256  )  ; 
+    fn getUpdatedBoardStatepublic(self: @TContractState,  tokenboundaccount : ContractAddress ) -> u256 ; 
+    fn checkWinngstatus(self: @TContractState, token_id: u256) -> u8 ; 
 }
+
+#[starknet::interface]
+trait IAccount<TContractState> {
+    fn is_valid_signature(
+        self: @TContractState, hash: felt252, signature: Span<felt252>
+    ) -> felt252;
+    fn is_valid_signer(self: @TContractState, signer: ContractAddress) -> felt252;
+    fn __validate__(ref self: TContractState, calls: Array<Call>) -> felt252;
+    fn __validate_declare__(self: @TContractState, class_hash: felt252) -> felt252;
+    fn __validate_deploy__(
+        self: @TContractState, class_hash: felt252, contract_address_salt: felt252
+    ) -> felt252;
+    fn __execute__(ref self: TContractState, calls: Array<Call>) -> Array<Span<felt252>>;
+    fn token(self: @TContractState) -> (ContractAddress, u256);
+    fn owner(self: @TContractState) -> ContractAddress;
+    fn lock(ref self: TContractState, duration: u64);
+    fn is_locked(self: @TContractState) -> (bool, u64);
+    fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
+}
+
+
+
 
 
 #[starknet::contract]
@@ -30,12 +85,16 @@ mod BoardNFT {
     use core::nullable::match_nullable;
     use core::zeroable::Zeroable;
     use core::traits::Into;
+  
+    use super::IAccountDispatcher;
+    use super::IAccountDispatcherTrait;
+    use ccnfts::chess_test::{searchMove, isLegalMove, applyMove, Move , encodeTokenId , calculate_move_enoded };
     use super::IBoardNFT;
 
-
+    // use openzeppelin::token::erc20:: { erc20 , ERC20Component, ERC20HooksEmptyImpl::InternalImpl } ;
+ 
+    
     const NAME: felt252 = 'BoardNFT';
-
-
     // Your NFT's Token Symbol as Bytes. eg: "MDN" -> 0x4d444e
     const SYMBOL: felt252 = 'BNFT';
 
@@ -69,6 +128,7 @@ mod BoardNFT {
         balances: LegacyMap::<ContractAddress, u256>,
         token_approvals: LegacyMap::<u256, ContractAddress>,
         operator_approvals: LegacyMap::<(ContractAddress, ContractAddress), bool>,
+        /// this will calculate the total nft ok 
         count: u256, //Total number of NFTs minted
         ////////////////for the chess 
 
@@ -79,14 +139,47 @@ mod BoardNFT {
         board_currentstate: LegacyMap::<u256, u256>,
         MintedAddress: ContractAddress,
         board_amt : LegacyMap::<u256, u256> , 
+        status : LegacyMap::<u256, u8> , //  loss 1 - win 2 - match is going on -0 
+        //// which tokenId is the puzzle 
+        puzzle_allowed_to_play : LegacyMap::<u256, bool > , // tokenid => true // allowed to play 
+
+        /// this contain total supply of the inner moves ok 
+        ///
+        board_to_moves : LegacyMap::<u256, u256> ,
+        //this should go from 1 to 63
+        // tokenid calculated 
+        /// puzzel id => 64 / 4 - 
+        /// moves max is => 64 
+        
+        // so to calculate the tokenid =>   23
+        tokenid_to_uriData : LegacyMap::<u256, (u256, u256 ) > , // simple the token id and the move 
+
+
+        /// tokenid => total moves which is also very usefull to make the game the
+        
     }
 
+    
+
+    
     #[event]
-    #[derive(Drop, starknet::Event)]
+    #[derive(Drop, starknet::Event )]
     enum Event {
         Approval: Approval,
         Transfer: Transfer,
-        ApprovalForAll: ApprovalForAll
+        ApprovalForAll: ApprovalForAll,
+        PlayMoveEvent : PlayMoveEvent ,
+    }
+
+
+
+    #[derive(Drop, starknet::Event)]
+    struct PlayMoveEvent {
+        caller: ContractAddress,
+        currentBoardState : u256 ,
+        newBoardState : u256 , 
+        token_id_move: u256,
+        token_id_board: u256,
     }
 
     ////////////////////////////////
@@ -122,9 +215,11 @@ mod BoardNFT {
     fn constructor(ref self: ContractState, _minted_Address: ContractAddress) {
         self.MintedAddress.write(_minted_Address);
         self.count.write(0);
+        // self.erc20._mint(recipient, fixed_supply);
         self.initConfig();
-    }
 
+    }
+ 
     #[generate_trait]
     impl ConfigImpl of ConfigTrait {
         fn initConfig(
@@ -177,6 +272,118 @@ mod BoardNFT {
             self.board_amt.read(token_id)
 
         }
+
+        /// token bound account address so then we get the token id 
+        fn get_token_Id(self: @ContractState, caller: ContractAddress) -> u256 {
+            let account = IAccountDispatcher { contract_address: caller };
+            let (_token_contract, token_id) = account.token();
+            token_id
+        }
+
+
+        // iwant to make this happen that will be happen so lets do it ok 
+        // no other so 
+
+
+        //called by the system 
+    fn _play_move_chess(ref self : ContractState ,  _board: u256, _move: u256, _depth: u256 , tokenId : u256  ) -> (u256 , u256) {
+            // first we have to check the move is leagal or not 
+
+            if !isLegalMove(_board, _move) || self.status.read(tokenId) != 0 {
+            assert!(false, "illegal move");
+            }
+            // then we have to apply the move  
+            let mut board = applyMove(_board, _move);
+            ///// we have to take care of the ai move 
+            let (bestMove, isWhiteCheckmated) = searchMove(board, 1 );
+            /// if he does not  
+            if (bestMove == 0) {
+                /// reset the board 
+                /// means player has won  
+                ///  you won minted some large no of token to it ok 
+                // 0 -loss 
+                // 1 - win 
+                // 2 - match is going on
+                /// so the owner of the token can able to get the token 
+                /// import the erc20 token 
+             self.status.write(tokenId, 1) ;
+                /// minted winner nft to him 
+            } else {
+                // ai move  
+                board = applyMove(board, bestMove);
+        
+                if (isWhiteCheckmated) {
+                    // player have lost 
+                 self.status.write(tokenId, 2) ;
+                    /// block him so that he cannot able to play the game 
+                }
+            }
+           ( board , bestMove )
+        }
+
+
+        fn playmove(ref self: ContractState, _move: u256  ) {
+            // let _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
+            let caller = get_caller_address() ; //  callerfrom ; 
+            // through the caller we get the token id 
+            let tokenId =  self.get_token_Id(caller);
+            // through the tokenid we found the current board state ; 
+            let current_board_state = self.board_current_state(tokenId);
+            let depth = self.hardness_Depth(tokenId) ;
+            /// now it is ready for the chess moves and let do the usefull chessstuff 
+            let (new_chess_board_after_ai , bestMove ) = self._play_move_chess(current_board_state, _move, depth , tokenId ) ;
+            //// now what we have to do is to update the current board state     
+            self.update_board_current_state(tokenId, new_chess_board_after_ai);
+            // let mut current_all_board  : Array<u256> = self.tba_tokenId_to_move_tokenId.read(tokenId) ;
+            //   current_all_board.append(tokenId) ;
+            // now we have to save the whole the old board state and the move and the new board state
+
+            // board nft start from o t 63 
+            // move nft start from 1 to 63 
+
+
+            //// let start working with the tokenIds ok which will contain the board and move made during this ok 
+            
+            // for the first it is zero 
+            let tokenId_moves = self.board_to_moves.read(tokenId) + 1 ; 
+            // tokenId_board 
+            // first one is for the board and second one is for the move 
+            let tokenId_encoded = encodeTokenId(tokenId, tokenId_moves) ;
+            self._safe_mint(caller, tokenId_encoded ); 
+            self.board_to_moves.write(tokenId, tokenId_moves) ;
+
+
+            // safe the board to the token id respectaviely 
+
+
+            let encoded_move = calculate_move_enoded(depth , _move , bestMove) ;
+            self.tokenid_to_uriData.write(tokenId_encoded, (new_chess_board_after_ai, encoded_move ) ) ;
+
+
+            self
+                .emit(
+                    PlayMoveEvent {
+                        caller: caller, 
+                        currentBoardState: current_board_state,
+                        newBoardState: new_chess_board_after_ai,
+                        token_id_move: tokenId_moves ,
+                        token_id_board: tokenId
+                    }
+                );
+        // i also want to create the mapping between the token id and the current board state and move it make it means just before , after and the move by him 
+        //token_id_to_board_state : LegacyMap::<u256, BoardState> ,
+        }
+
+        fn getUpdatedBoardStatepublic(self: @ContractState,  tokenboundaccount : ContractAddress ) -> u256 {
+            let tokenId =  self.get_token_Id(tokenboundaccount);
+            let current_board_state = self.board_current_state(tokenId);
+            return current_board_state ;
+        }
+
+        fn checkWinngstatus(self: @ContractState, token_id: u256) -> u8 {
+            self.status.read(token_id)
+        }
+
     }
 
 
@@ -209,6 +416,7 @@ mod BoardNFT {
             // tokenid =>  board 
             let token_id = self.count.read();
             self.ai_hard.write(token_id, _depth);
+            self.tokenid_to_uriData.write(token_id , (_board, 0) ) ;
             self.board_mintedstate.write(token_id, _board);
             self.board_currentstate.write(token_id, _board);
             self._safe_mint(self.MintedAddress.read(), token_id);
@@ -218,32 +426,22 @@ mod BoardNFT {
         }
 
         // this should be image 
-        fn tokenURI(self: @ContractState, token_id: u256) -> Array<felt252> {
-            let tokenFile: felt252 = token_id.try_into().unwrap();
-            let mut link = self._getBaseURI(); //BaseURI
-            //# Convert int id into Cairo ShortString(bytes) #
-            // revert number   12345 -> 54321, 1000 -> 0001
-            let mut revNumber: u256 = 0;
-            let mut currentInt: u256 = token_id * 10 + 1;
-            loop {
-                revNumber = revNumber * 10 + currentInt % 10;
-                currentInt = currentInt / 10_u256;
-                if currentInt < 1 {
-                    break;
-                };
-            };
-            //split chart
-            loop {
-                let lastChar: u256 = revNumber % 10_u256;
-                link.append(self._intToChar(lastChar)); // BaseURI + TOKEN_ID
-                revNumber = revNumber / 10_u256;
-                if revNumber < 2 { //~ = 1
-                    break;
-                };
-            };
-            link.append(0x2e6a736f6e); // BaseURI + TOKEN_ID + .json
-            link
+        fn tokenURI(self: @ContractState, token_id: u256) -> Array<felt252>{
 
+
+            let mut link = ArrayTrait::new();
+            let (board , encodemove)  =  self.tokenid_to_uriData.read(token_id) ; 
+
+            let board_felt : felt252 = board.try_into().unwrap(); 
+            let move_felt : felt252 = encodemove.try_into().unwrap();
+
+            if encodemove != 0  || encodemove > 64 {
+                link.append(board_felt);
+                link.append(move_felt);
+            }
+            link.append(board_felt);
+
+          return link ; 
         }
 
         // Compatibility
