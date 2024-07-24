@@ -1,23 +1,24 @@
 use core::option::OptionTrait;
 use alexandria_data_structures::array_ext::ArrayTraitExt;
 use core::array::ArrayTrait;
-use alexandria_math::{U128BitShift, U256BitShift , U16BitShift};
+use alexandria_math::{U128BitShift, U256BitShift, U16BitShift};
 use alexandria_data_structures::vec::{Felt252Vec, VecTrait};
 use core::traits::TryInto;
 // let val = U256BitShift::shl(vale, 3); // right shift  multiply << 128 
 // let valr =U256BitShift::shr(vale, 3); // left shift  divison >>  2
 const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-pub fn encodeTokenId(num1 : u256  , num2 : u256)  -> u256 {
+pub fn encodeTokenId(num1: u256, num2: u256) -> u256 {
     if (num1 < 0 || num1 > 63 || num2 < 0 || num2 > 63) {
-       assert!(false, "supply is over");
+        assert!(false, "supply is over");
     }
-       U256BitShift::shr(num1, 8 ) | num2 
-  }
+    (U256BitShift::shl(num1, 8) | num2)
+}
 
-  pub fn calculate_move_enoded( _depth : u256 , _move : u256 , _bestMove : u256 ) -> u256 {
-     U256BitShift::shl(_depth, 24 ) |  U256BitShift::shl(_move , 12 ) | _bestMove
-  }
+
+pub fn calculate_move_enoded(_depth: u256, _move: u256, _bestMove: u256) -> u256 {
+    U256BitShift::shl(_depth, 24) | U256BitShift::shl(_move, 12) | _bestMove
+}
 
 //////////////////////////////////////////////////
 //                                              //
@@ -45,7 +46,7 @@ pub struct MoveArray {
 }
 
 fn insert(ref arrst: ArrayStack, index: usize, value: u256) {
-    if (index >= arrst.size) {// println!("Array out of bound");
+    if (index >= arrst.size) { // println!("Array out of bound");
     }
     // println!("{:?}", arrst.main_stack); //
     let mut i = 0;
