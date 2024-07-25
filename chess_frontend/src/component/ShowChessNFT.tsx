@@ -11,7 +11,7 @@ import styles from './ShowChessBoard.module.css';
 import { Contract, RpcProvider } from "starknet";
 import { ConnectedStarknetWindowObject } from "get-starknet-core";
 import { TokenboundConnector, TokenBoundModal, useTokenBoundModal } from "tokenbound-connector";
-const contractAddress = "0x2a6d064d39cd39d2e34bb4705655e445d093a66f4fdc2a5e756336eacaeed9e";
+const contractAddress = "0x1b3f391b295753980d169452cf1ad25170ca7005724714bda80efac638a5435";
 
 
 function ShowChessNFT() {

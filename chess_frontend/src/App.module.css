@@ -1,0 +1,53 @@
+/* App.module.css */
+
+.container {
+  font-family: Arial, sans-serif;
+  color: #333;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+  text-align: center;
+}
+
+.header {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: #007bff;
+}
+
+.header p {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.section {
+  margin: 20px 0;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+section:nth-of-type(odd) {
+  background-color: #f9f9f9;
+}
+
+section:nth-of-type(even) {
+  background-color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .header p {
+    font-size: 1rem;
+  }
+}

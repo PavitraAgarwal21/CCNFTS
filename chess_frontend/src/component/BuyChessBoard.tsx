@@ -13,15 +13,17 @@ import { Contract, RpcProvider } from "starknet";
 import { stringify } from "querystring";
 import { a } from "@starknet-react/core/dist/index-79NvzQC9";
 import { stat } from "fs";
-const contractAddress = "0x2e3460eadecd9e00d9cf1c9c26fac4c45ba767b150cc697399ece5e54927411";
+import { copyToClipboard  } from './utils';
+const contractAddress = "0x1b3f391b295753980d169452cf1ad25170ca7005724714bda80efac638a5435";
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 
 
 function BuyChessBoard() {
 
   const [walletName, setWalletName] = useState("");
   const [account, setAccount] = useState();
+  const [tbaAccount, setTbaAccount] = useState<string | null>(null);
+
   const provider = new RpcProvider({
     nodeUrl: "https://starknet-sepolia.public.blastapi.io/rpc/v0_7",
   });
@@ -46,7 +48,8 @@ function BuyChessBoard() {
     score: number;
   }
 
-  const hexToBoard = (hexStr: string): string[][] => {
+
+ const hexToBoard = (hexStr: string): string[][] => {
     const pieceMap: { [key: string]: string } = {
       '0': '·',  '1': '♟',  '2': '♝',  '3': '♜',
       '4': '.',  '5': '♛',  '6': '♚',  '9': '♙',
@@ -74,7 +77,8 @@ function BuyChessBoard() {
     return trimmedBoard;
   };
 
-  const initialPuzzles: Puzzle[] = [
+
+   const initialPuzzles: Puzzle[] = [
     { boardHex: '0x3256230011111100000000000000000099999900BCDECB000000001', depth: 3, score: 3000 },
     { boardHex: '0x3256230011111100000000000000000099999900BCDECB000000001', depth: 4, score: 4000 },
     { boardHex: '0x3256230010000100001000009199D00009009000BC0ECB000000001', depth: 4, score: 4000 },
@@ -170,10 +174,9 @@ let tx = await contract.makePuzzle(board, depth, amt);
    status = await checkTBAdeployment(board_token_id);
    await sleep(2000);
     }
-
       let tbaaccount = await getTBA(board_token_id);
       console.log(tbaaccount);
-    
+     
     }
    catch (error) {
     console.error(error);
@@ -224,8 +227,17 @@ let tx = await contract.makePuzzle(board, depth, amt);
         tokenId : token_id, 
       }
       ); 
+      setTbaAccount(tbaaccount);
       console.log(tbaaccount)
+      alert("copy the address from the clipboard");
   }
+
+  const handleCopy = () => {
+    if (tbaAccount) {
+      copyToClipboard(tbaAccount);
+      alert("TBA account address copied to clipboard!");
+    }
+  };
 
   // create the token id for this ok now i am all ready to go with that ok 
 
@@ -271,12 +283,8 @@ let tx = await contract.makePuzzle(board, depth, amt);
                   >
                     Buy
                   </button>
-                  <button
-                    className={`${styles.buyButton} ${styles.deployButton}`}
-                    onClick={() => handleDeploy(puzzle)}
-                  >
-                    Deploy
-                  </button>
+                  <button className={styles.copyButton} onClick={handleCopy}>Copy Address</button>
+
                 </div>
               </div>
             </div>
