@@ -5,7 +5,7 @@ import { Contract, RpcProvider } from "starknet";
 import { ConnectedStarknetWindowObject } from "get-starknet-core";
 import { TokenboundConnector, TokenBoundModal, useTokenBoundModal } from "tokenbound-connector";
 import { ABI } from "../abis/abi";
-const contractAddress = "0x079eeee7d9fe0d1811472d59d4dd239b68fdf0b15530851acd80d4c683fa0a75"; 
+const contractAddress = "0x397de13e4b1982fa6d69ce9d441f762acd3e93b8cc9d08fc162d5938975c506"; 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const Chessboard = () => {
@@ -105,18 +105,18 @@ const Chessboard = () => {
   const hexToBoard = (hexStr: string) => {
 
     const pieceMap: { [key: string]: string } = {
-   '0': '·',  // Empty
-      '1': '♟',  // White Pawn
-      '2': '♝',  // White Knight
-      '3': '♜',  // Unused (originally White Bishop)
-      '4': '.',   // White Rook
-      '5': '♛',  // White Queen
-      '6': '♚',  // White King
-      '9': '♙',  // Black Pawn
-      'B': '♖',  // Black Rook
-      'C': '♘',  // Black Bishop
-      'D': '♕',  // Black Queen
-      'E': '♔',  // Black King
+   '0': '·',  
+      '1': '♟',  
+      '2': '♝', 
+      '3': '♜', 
+      '4': '.',  
+      '5': '♛',  
+      '6': '♚',  
+      '9': '♙',  
+      'B': '♖', 
+      'C': '♘',  
+      'D': '♕', 
+      'E': '♔',  
     };
 
     if (hexStr.startsWith('0x')) {

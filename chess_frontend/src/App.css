@@ -54,3 +54,11 @@
   }
 }
 
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh; /* Full viewport height */
+  background-color: #f0f0f0; /* Light background color for contrast */
+  margin: 0;
+}

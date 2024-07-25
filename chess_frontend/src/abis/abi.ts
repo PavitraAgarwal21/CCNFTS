@@ -1,25 +1,8 @@
 export const ABI = [
   {
-    "name": "boardNFTgetname",
-    "type": "function",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::felt252"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "boardNFTgetsymbol",
-    "type": "function",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::felt252"
-      }
-    ],
-    "state_mutability": "view"
+    "name": "IBNFT",
+    "type": "impl",
+    "interface_name": "ccnfts::MIX::IBoardNFT"
   },
   {
     "name": "core::integer::u256",
@@ -36,159 +19,220 @@ export const ABI = [
     ]
   },
   {
-    "name": "boardNFThardness",
-    "type": "function",
-    "inputs": [
+    "name": "ccnfts::MIX::IBoardNFT",
+    "type": "interface",
+    "items": [
       {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "boardNFTboard_minted_state",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "boardNFTboard_current_state",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "boardNFTupdate_board_current_state",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
+        "name": "getname",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
-        "name": "new_state_board",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "name": "get_token_Id",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "caller",
-        "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "get_amt_mint",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "_play_move_chess",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "_board",
-        "type": "core::integer::u256"
+        "name": "getsymbol",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
-        "name": "_move",
-        "type": "core::integer::u256"
+        "name": "hardness_Depth",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
-        "name": "_depth",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
+        "name": "board_minted_state",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
       {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "name": "playmove",
-    "type": "function",
-    "inputs": [
+        "name": "board_current_state",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
       {
-        "name": "_move",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "name": "getUpdatedBoardStatepublic",
-    "type": "function",
-    "inputs": [
+        "name": "update_board_current_state",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "new_state_board",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
       {
-        "name": "tokenboundaccount",
-        "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "outputs": [
+        "name": "get_minted_token_amount",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
       {
-        "type": "core::integer::u256"
+        "name": "get_token_Id",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "caller",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "_play_move_chess",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "_board",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "_move",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "_depth",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "tokenId",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "(core::integer::u256, core::integer::u256)"
+          }
+        ],
+        "state_mutability": "external"
+      },
+      {
+        "name": "playmove",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "_move",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "name": "getUpdatedBoardStatepublic",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "tokenboundaccount",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "checkWinngstatus",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u8"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "makePuzzle",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "_board",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "_depth",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "_amount",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
       }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "settokenId",
-    "type": "function",
-    "inputs": [],
-    "outputs": [],
-    "state_mutability": "external"
+    ]
   },
   {
     "name": "name",
@@ -213,6 +257,22 @@ export const ABI = [
     "state_mutability": "view"
   },
   {
+    "name": "tokenURI",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "token_id",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::array::Array::<core::felt252>"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
     "name": "token_uri",
     "type": "function",
     "inputs": [
@@ -221,6 +281,17 @@ export const ABI = [
         "type": "core::integer::u256"
       }
     ],
+    "outputs": [
+      {
+        "type": "core::array::Array::<core::felt252>"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "name": "contractURI",
+    "type": "function",
+    "inputs": [],
     "outputs": [
       {
         "type": "core::array::Array::<core::felt252>"
@@ -241,6 +312,17 @@ export const ABI = [
   },
   {
     "name": "maxSupply",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::integer::u256"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "name": "totalSupply",
     "type": "function",
     "inputs": [],
     "outputs": [
@@ -276,6 +358,22 @@ export const ABI = [
     ]
   },
   {
+    "name": "supportsInterface",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "interfaceID",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::bool"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
     "name": "supports_interface",
     "type": "function",
     "inputs": [
@@ -287,6 +385,22 @@ export const ABI = [
     "outputs": [
       {
         "type": "core::bool"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "name": "balanceOf",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::integer::u256"
       }
     ],
     "state_mutability": "view"
@@ -308,7 +422,103 @@ export const ABI = [
     "state_mutability": "view"
   },
   {
+    "name": "mintboard",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "_board",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "_depth",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "name": "get_encode_tokenId",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "board_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "move_id",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::integer::u256"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "name": "mintmove",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "board_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "_board",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "encoded_move",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "name": "ownerOf",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "token_id",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
     "name": "owner_of",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "token_id",
+        "type": "core::integer::u256"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "name": "getApproved",
     "type": "function",
     "inputs": [
       {
@@ -335,6 +545,26 @@ export const ABI = [
     "outputs": [
       {
         "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "name": "isApprovedForAll",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "operator",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "core::bool"
       }
     ],
     "state_mutability": "view"
@@ -376,7 +606,7 @@ export const ABI = [
     "state_mutability": "external"
   },
   {
-    "name": "set_approval_for_all",
+    "name": "setApprovalForAll",
     "type": "function",
     "inputs": [
       {
@@ -392,73 +622,7 @@ export const ABI = [
     "state_mutability": "external"
   },
   {
-    "name": "core::array::Span::<core::felt252>",
-    "type": "struct",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<core::felt252>"
-      }
-    ]
-  },
-  {
-    "name": "safe_transfer_from",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "from",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "to",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "data",
-        "type": "core::array::Span::<core::felt252>"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "name": "supportsInterface",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "interfaceID",
-        "type": "core::felt252"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::bool"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "ownerOf",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "setApprovalForAll",
+    "name": "set_approval_for_all",
     "type": "function",
     "inputs": [
       {
@@ -494,6 +658,16 @@ export const ABI = [
     "state_mutability": "external"
   },
   {
+    "name": "core::array::Span::<core::felt252>",
+    "type": "struct",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::felt252>"
+      }
+    ]
+  },
+  {
     "name": "safeTransferFrom",
     "type": "function",
     "inputs": [
@@ -518,94 +692,28 @@ export const ABI = [
     "state_mutability": "external"
   },
   {
-    "name": "isApprovedForAll",
+    "name": "safe_transfer_from",
     "type": "function",
     "inputs": [
       {
-        "name": "owner",
+        "name": "from",
         "type": "core::starknet::contract_address::ContractAddress"
       },
       {
-        "name": "operator",
+        "name": "to",
         "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::bool"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "getApproved",
-    "type": "function",
-    "inputs": [
+      },
       {
         "name": "token_id",
         "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
+      },
       {
-        "type": "core::starknet::contract_address::ContractAddress"
+        "name": "data",
+        "type": "core::array::Span::<core::felt252>"
       }
     ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "totalSupply",
-    "type": "function",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "tokenURI",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "token_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::array::Array::<core::felt252>"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "balanceOf",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "contractURI",
-    "type": "function",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::array::Array::<core::felt252>"
-      }
-    ],
-    "state_mutability": "view"
+    "outputs": [],
+    "state_mutability": "external"
   },
   {
     "name": "airdrop",
@@ -754,18 +862,65 @@ export const ABI = [
     "state_mutability": "view"
   },
   {
+    "name": "versionCode",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::integer::u256"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
     "name": "constructor",
     "type": "constructor",
     "inputs": [
       {
-        "name": "_boardNFTAddress",
+        "name": "_minted_Address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "erc20_token",
         "type": "core::starknet::contract_address::ContractAddress"
       }
     ]
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MoveNFT::MoveNFT::Approval",
+    "name": "ccnfts::MIX::MIX::PlayMoveEvent",
+    "type": "event",
+    "members": [
+      {
+        "kind": "data",
+        "name": "caller",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "kind": "data",
+        "name": "currentBoardState",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "newBoardState",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "token_id_move",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "token_id_board",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
+    "kind": "struct",
+    "name": "ccnfts::MIX::MIX::Approval",
     "type": "event",
     "members": [
       {
@@ -787,7 +942,7 @@ export const ABI = [
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MoveNFT::MoveNFT::Transfer",
+    "name": "ccnfts::MIX::MIX::Transfer",
     "type": "event",
     "members": [
       {
@@ -809,7 +964,7 @@ export const ABI = [
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MoveNFT::MoveNFT::ApprovalForAll",
+    "name": "ccnfts::MIX::MIX::ApprovalForAll",
     "type": "event",
     "members": [
       {
@@ -830,67 +985,30 @@ export const ABI = [
     ]
   },
   {
-    "kind": "struct",
-    "name": "ccnfts::MoveNFT::MoveNFT::PlayMoveEvent",
-    "type": "event",
-    "members": [
-      {
-        "kind": "data",
-        "name": "caller",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "kind": "data",
-        "name": "currentBoardState",
-        "type": "core::integer::u256"
-      },
-      {
-        "kind": "data",
-        "name": "newBoardState",
-        "type": "core::integer::u256"
-      },
-      {
-        "kind": "data",
-        "name": "move",
-        "type": "core::integer::u256"
-      },
-      {
-        "kind": "data",
-        "name": "token_id_move",
-        "type": "core::integer::u256"
-      },
-      {
-        "kind": "data",
-        "name": "token_id_board",
-        "type": "core::integer::u256"
-      }
-    ]
-  },
-  {
     "kind": "enum",
-    "name": "ccnfts::MoveNFT::MoveNFT::Event",
+    "name": "ccnfts::MIX::MIX::Event",
     "type": "event",
     "variants": [
       {
         "kind": "nested",
+        "name": "PlayMoveEvent",
+        "type": "ccnfts::MIX::MIX::PlayMoveEvent"
+      },
+      {
+        "kind": "nested",
         "name": "Approval",
-        "type": "ccnfts::MoveNFT::MoveNFT::Approval"
+        "type": "ccnfts::MIX::MIX::Approval"
       },
       {
         "kind": "nested",
         "name": "Transfer",
-        "type": "ccnfts::MoveNFT::MoveNFT::Transfer"
+        "type": "ccnfts::MIX::MIX::Transfer"
       },
       {
         "kind": "nested",
         "name": "ApprovalForAll",
-        "type": "ccnfts::MoveNFT::MoveNFT::ApprovalForAll"
-      },
-      {
-        "kind": "nested",
-        "name": "PlayMoveEvent",
-        "type": "ccnfts::MoveNFT::MoveNFT::PlayMoveEvent"
+        "type": "ccnfts::MIX::MIX::ApprovalForAll"
       }
     ]
   }
-] as const 
+] as const ; 

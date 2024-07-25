@@ -1,0 +1,113 @@
+/* BuyChessBoard.module.css */
+
+.buyApp {
+  text-align: center;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  padding: 20px;
+}
+
+.buyCard {
+  margin: 20px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+}
+
+.buyChessboard {
+  display: grid;
+  grid-template-columns: repeat(6, 45px);
+  gap: 2px;
+  margin: 20px auto;
+  max-width: 360px;
+}
+
+.buyRow {
+  display: grid;
+  grid-template-columns: repeat(6, 45px);
+}
+
+.buySquare {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border-radius: 4px;
+}
+
+.buyDark {
+  background-color: #d18b47;
+}
+
+.buyLight {
+  background-color: #eee;
+}
+
+.buyInputContainer {
+  margin-top: 20px;
+}
+
+.buyInputField {
+  margin-right: 10px;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.buyButton {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+.buyButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.buyBoardContainer {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.buyBoardWrapper {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+}
+
+.buyBoardActions {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.buyBoardActions button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.buyBoardActions .buy1Button {
+  background-color: #28a745;
+  color: #ffffff;
+}
+
+.buyBoardActions .deployButton {
+  background-color: #dc3545;
+  color: #ffffff;
+}
