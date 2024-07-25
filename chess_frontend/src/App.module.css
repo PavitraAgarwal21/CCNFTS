@@ -1,53 +1,76 @@
 /* App.module.css */
 
 .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-family: Arial, sans-serif;
   color: #333;
   padding: 20px;
-  max-width: 1200px;
-  margin: auto;
-  text-align: center;
+  background-color: #f4f4f4;
 }
 
 .header {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-bottom: 1px solid #ddd;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .header h1 {
-  margin: 0;
   font-size: 2.5rem;
-  color: #007bff;
+  font-weight: bold;
+  color: #0070f3; /* A vibrant blue for the header */
 }
 
 .header p {
-  margin-top: 10px;
   font-size: 1.2rem;
-  color: #555;
+  color: #666;
 }
 
 .section {
-  margin: 20px 0;
+  width: 100%;
+  max-width: 1200px;
   padding: 20px;
+  margin: 10px 0;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-section:nth-of-type(odd) {
-  background-color: #f9f9f9;
+.section h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
-section:nth-of-type(even) {
-  background-color: #ffffff;
+.section p {
+  font-size: 1rem;
+  margin-bottom: 20px;
 }
 
-@media (max-width: 768px) {
-  .header h1 {
-    font-size: 2rem;
-  }
+/* Specific colors for each section */
+.playChess {
+  background-color: #e0f7fa; /* Light cyan */
+}
 
-  .header p {
-    font-size: 1rem;
-  }
+.yourNFTs {
+  background-color: #f1f8e9; /* Light green */
+}
+
+.buyChessBoards {
+  background-color: #ffecb3; /* Light yellow */
+}
+
+/* Style for buttons if needed */
+button {
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #005bb5;
 }
