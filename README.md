@@ -1,4 +1,4 @@
-# CCNFTs & Chess Engine README
+# CCNFTs 
 
 ## CCNFTs: A Revolutionary Approach to Blockchain Gaming
 
@@ -12,7 +12,7 @@
 
 4. **Token Rewards System**: Winning a game earns you prestigious Chess Tokens, while losing results in minting tokens for the challenge creator. This creates a dynamic tokenomics model where ERC20 and ERC721 tokens are intricately linked, boosting demand and value for both.
 
-## Chess Engine: Technical Details
+## Chess : Technical Details
 
 ### Piece Representation
 
