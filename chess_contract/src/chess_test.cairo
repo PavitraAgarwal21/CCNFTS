@@ -9,9 +9,6 @@ use core::traits::TryInto;
 const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
 pub fn encodeTokenId(num1: u256, num2: u256) -> u256 {
-    if (num1 < 0 || num1 > 63 || num2 < 0 || num2 > 63) {
-        assert!(false, "supply is over");
-    }
     (U256BitShift::shl(num1, 8) | num2)
 }
 

@@ -5,7 +5,7 @@ import { Contract, RpcProvider } from "starknet";
 import { ConnectedStarknetWindowObject } from "get-starknet-core";
 import { TokenboundConnector, TokenBoundModal, useTokenBoundModal } from "tokenbound-connector";
 import { ABI } from "../abis/abi";
-const contractAddress = "0x397de13e4b1982fa6d69ce9d441f762acd3e93b8cc9d08fc162d5938975c506"; 
+const contractAddress = "0x2a6d064d39cd39d2e34bb4705655e445d093a66f4fdc2a5e756336eacaeed9e"; 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const Chessboard = () => {

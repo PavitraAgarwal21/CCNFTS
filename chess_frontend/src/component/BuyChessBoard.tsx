@@ -5,32 +5,40 @@ import {
   connect,
   disconnect,
 } from "get-starknet";
-import { Contract } from "starknet";
+import { TokenboundClient , TokenboundClientOptions } from "starknet-tokenbound-sdk";
+import { IMPLEMENTATION_HASH, REGISTRY_ADDRESS  , JSON_RPC } from "./constants" ; 
 import { ABI } from "../abis/abi";
 import styles from './BuyChessBoard.module.css';
+import { Contract, RpcProvider } from "starknet";
+import { stringify } from "querystring";
+import { a } from "@starknet-react/core/dist/index-79NvzQC9";
+import { stat } from "fs";
+const contractAddress = "0x2e3460eadecd9e00d9cf1c9c26fac4c45ba767b150cc697399ece5e54927411";
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const contractAddress = "0x397de13e4b1982fa6d69ce9d441f762acd3e93b8cc9d08fc162d5938975c506";
+
 
 function BuyChessBoard() {
+
   const [walletName, setWalletName] = useState("");
   const [account, setAccount] = useState();
-
+  const provider = new RpcProvider({
+    nodeUrl: "https://starknet-sepolia.public.blastapi.io/rpc/v0_7",
+  });
   function handleConnect(options?: ConnectOptions) {
     return async () => {
       const res = await connect(options);
-      console.log(res?.account);
+      // console.log(res?.account);
       setWalletName(res?.name || "");
       setAccount(res?.account);
     }
   }
-
   function handleDisconnect(options?: DisconnectOptions) {
     return async () => {
       await disconnect(options);
       setWalletName("");
     }
   }
-
 
   interface Puzzle {
     boardHex: string;
@@ -128,14 +136,102 @@ function BuyChessBoard() {
 
 
 
-  function buychess(puzzle: Puzzle) {
-    const contract = new Contract(ABI, contractAddress, account).typedv2(ABI);
-    const board = BigInt(puzzle.boardHex);
-    const depth = puzzle.depth;
-    const amt = puzzle.score; 
 
-    contract.makePuzzle(board, depth, amt);
+
+interface TokenID{
+  creator: string;
+  tokenId: number;
+}
+
+// contract address t0 
+
+const [token_id, set_token_id] = useState<string>(""); 
+
+async function buychess(puzzle: Puzzle) {
+  const contract = new Contract(ABI, contractAddress, account).typedv2(ABI);
+  const board = BigInt(puzzle.boardHex);
+  const depth = puzzle.depth;
+  const amt = puzzle.score;
+  try {
+
+    
+let tx = await contract.makePuzzle(board, depth, amt); 
+    console.log(tx);
+    let contract_read = new Contract(ABI, contractAddress, provider).typedv2(ABI); 
+    let board_supply  = await contract_read.get_total_puzzle_supply();
+    let board_token_id = (Number(board_supply) << 8).toString(); // Shift left by 8 bits and convert to string
+    console.log(board_token_id);
+    
+     await sleep(15000); // Wait for 5 seconds
+    let val = await deployTBA(board_token_id);
+    let status = await checkTBAdeployment(board_token_id);
+    console.log(status);
+    while (!status) {
+   status = await checkTBAdeployment(board_token_id);
+   await sleep(2000);
+    }
+
+      let tbaaccount = await getTBA(board_token_id);
+      console.log(tbaaccount);
+    
+    }
+   catch (error) {
+    console.error(error);
   }
+  
+}
+
+
+
+  const options: TokenboundClientOptions = {
+    account : account , 
+    registryAddress : REGISTRY_ADDRESS ,
+    implementationAddress : IMPLEMENTATION_HASH , 
+    jsonRPC : JSON_RPC , 
+  }
+  let tokenbound : any ; 
+  if (account){
+     tokenbound = new TokenboundClient(options);
+  } 
+
+
+  const deployTBA = async (token_id : string) => {
+   await  sleep(5000);
+
+    try {
+      const status = await tokenbound.createAccount( {
+        tokenContract : contractAddress , 
+        tokenId : token_id, 
+      }
+      ); 
+    } catch(err) {
+      console.log(err)
+    }
+  };
+  const checkTBAdeployment = async (token_id : string) => {
+  
+    const status = await tokenbound.checkAccountDeployment( {
+      tokenContract : contractAddress , 
+      tokenId : token_id, 
+    }
+    ); 
+    return status.deployed;
+  }
+  // now i have to deploy the contract and then get the token id from that ok
+  const getTBA = async (token_id : string) => {  
+      const tbaaccount = await tokenbound.getAccount( {
+        tokenContract : contractAddress , 
+        tokenId : token_id, 
+      }
+      ); 
+      console.log(tbaaccount)
+  }
+
+  // create the token id for this ok now i am all ready to go with that ok 
+
+
+  // let tokenbound : any  = new TokenboundClient(options);
+
 
 
   return (
@@ -143,6 +239,7 @@ function BuyChessBoard() {
       <div className={styles.buyCard}>
         <button className={styles.buyButton} onClick={handleConnect()}>Connect</button>
         <button className={styles.buyButton} onClick={handleDisconnect()}>Disconnect</button>
+
       </div>
       <div>
         <h1>Chess Puzzle Management</h1>

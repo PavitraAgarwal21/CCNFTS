@@ -1,8 +1,8 @@
-export const ABI = [
+export const ABI =[
   {
     "name": "IBNFT",
     "type": "impl",
-    "interface_name": "ccnfts::MIX::IBoardNFT"
+    "interface_name": "ccnfts::CCNFTS::IBoardNFT"
   },
   {
     "name": "core::integer::u256",
@@ -19,7 +19,7 @@ export const ABI = [
     ]
   },
   {
-    "name": "ccnfts::MIX::IBoardNFT",
+    "name": "ccnfts::CCNFTS::IBoardNFT",
     "type": "interface",
     "items": [
       {
@@ -62,6 +62,22 @@ export const ABI = [
       },
       {
         "name": "board_minted_state",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "token_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "get_move_total_supply",
         "type": "function",
         "inputs": [
           {
@@ -231,6 +247,81 @@ export const ABI = [
         ],
         "outputs": [],
         "state_mutability": "external"
+      },
+      {
+        "name": "mintmove",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "to",
+            "type": "core::starknet::contract_address::ContractAddress"
+          },
+          {
+            "name": "board_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "_board",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "encoded_move",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "name": "mintboard",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "to",
+            "type": "core::starknet::contract_address::ContractAddress"
+          },
+          {
+            "name": "_board",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "_depth",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "name": "get_encode_tokenId",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "board_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "move_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "get_total_puzzle_supply",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
       }
     ]
   },
@@ -420,70 +511,6 @@ export const ABI = [
       }
     ],
     "state_mutability": "view"
-  },
-  {
-    "name": "mintboard",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "to",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "_board",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "_depth",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "name": "get_encode_tokenId",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "board_id",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "move_id",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "core::integer::u256"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "name": "mintmove",
-    "type": "function",
-    "inputs": [
-      {
-        "name": "to",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "board_id",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "_board",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "encoded_move",
-        "type": "core::integer::u256"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
   },
   {
     "name": "ownerOf",
@@ -888,7 +915,7 @@ export const ABI = [
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MIX::MIX::PlayMoveEvent",
+    "name": "ccnfts::CCNFTS::CCNFTS::PlayMoveEvent",
     "type": "event",
     "members": [
       {
@@ -920,7 +947,7 @@ export const ABI = [
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MIX::MIX::Approval",
+    "name": "ccnfts::CCNFTS::CCNFTS::Approval",
     "type": "event",
     "members": [
       {
@@ -942,7 +969,7 @@ export const ABI = [
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MIX::MIX::Transfer",
+    "name": "ccnfts::CCNFTS::CCNFTS::Transfer",
     "type": "event",
     "members": [
       {
@@ -964,7 +991,7 @@ export const ABI = [
   },
   {
     "kind": "struct",
-    "name": "ccnfts::MIX::MIX::ApprovalForAll",
+    "name": "ccnfts::CCNFTS::CCNFTS::ApprovalForAll",
     "type": "event",
     "members": [
       {
@@ -985,29 +1012,51 @@ export const ABI = [
     ]
   },
   {
+    "kind": "struct",
+    "name": "ccnfts::CCNFTS::CCNFTS::MintBoard",
+    "type": "event",
+    "members": [
+      {
+        "kind": "data",
+        "name": "caller",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "kind": "data",
+        "name": "token_id",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
     "kind": "enum",
-    "name": "ccnfts::MIX::MIX::Event",
+    "name": "ccnfts::CCNFTS::CCNFTS::Event",
     "type": "event",
     "variants": [
       {
         "kind": "nested",
         "name": "PlayMoveEvent",
-        "type": "ccnfts::MIX::MIX::PlayMoveEvent"
+        "type": "ccnfts::CCNFTS::CCNFTS::PlayMoveEvent"
       },
       {
         "kind": "nested",
         "name": "Approval",
-        "type": "ccnfts::MIX::MIX::Approval"
+        "type": "ccnfts::CCNFTS::CCNFTS::Approval"
       },
       {
         "kind": "nested",
         "name": "Transfer",
-        "type": "ccnfts::MIX::MIX::Transfer"
+        "type": "ccnfts::CCNFTS::CCNFTS::Transfer"
       },
       {
         "kind": "nested",
         "name": "ApprovalForAll",
-        "type": "ccnfts::MIX::MIX::ApprovalForAll"
+        "type": "ccnfts::CCNFTS::CCNFTS::ApprovalForAll"
+      },
+      {
+        "kind": "nested",
+        "name": "MintBoard",
+        "type": "ccnfts::CCNFTS::CCNFTS::MintBoard"
       }
     ]
   }

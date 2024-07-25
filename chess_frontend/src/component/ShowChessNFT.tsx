@@ -11,8 +11,8 @@ import styles from './ShowChessBoard.module.css';
 import { Contract, RpcProvider } from "starknet";
 import { ConnectedStarknetWindowObject } from "get-starknet-core";
 import { TokenboundConnector, TokenBoundModal, useTokenBoundModal } from "tokenbound-connector";
+const contractAddress = "0x2a6d064d39cd39d2e34bb4705655e445d093a66f4fdc2a5e756336eacaeed9e";
 
-const contractAddress = "0x397de13e4b1982fa6d69ce9d441f762acd3e93b8cc9d08fc162d5938975c506";
 
 function ShowChessNFT() {
   const provider = new RpcProvider({
@@ -114,7 +114,7 @@ function ShowChessNFT() {
   
     const tokenIdStr = tokenId.toString();
   
-    const totalMoves = 3 ; // await contract.get_total_moves(tokenIdStr);
+    const totalMoves = 3 ; await contract.get_move_total_supply(tokenIdStr);
   
     console.log(totalMoves);
     return totalMoves;
@@ -133,7 +133,6 @@ function ShowChessNFT() {
   const initialPuzzles: Puzzle[] = [] ; 
   async function getAllTokenIDs() {
     try {
-      const userAddress = '0xYourAddress'; // Replace with the actual address
       const tokenId = await getTokenId(address);
       console.log('Token ID:', tokenId);
       const contract = new Contract(ABI, contractAddress, provider).typedv2(ABI);
