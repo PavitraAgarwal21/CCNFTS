@@ -91,18 +91,16 @@ mod CCNFTS {
     const NAME: felt252 = 0x43434e465453;
     const SYMBOL: felt252 = 0x43434e465453;
 
-    const BASE_URI_PART_1: felt252 = 0x697066733a2f2f516d505a6e336f5967486f676343643835;
-    const BASE_URI_PART_2: felt252 = 0x697251685033794d61446139387878683654653550426e53;
-    const BASE_URI_PART_3: felt252 = 0x61626859722f;
+
     const ADMIN_ADDRESS: felt252 =
     0x004835541Fd87cdDBc3B48Ad08e53FfA1E4D55aB21a46900A969DF326C9276326;
-    const VERSION_CODE: u256 = 202311150001001; /// YYYYMMDD000NONCE
-
+    const VERSION_CODE: u256 = 202311150001001;
     const MAX_SUPPLY: u256 = 100000;
     const INTERFACE_ERC165: felt252 = 0x01ffc9a7;
     const INTERFACE_ERC721: felt252 = 0x80ac58cd;
     const INTERFACE_ERC721_METADATA: felt252 = 0x5b5e139f;
     const INTERFACE_ERC721_RECEIVER: felt252 = 0x150b7a02;
+
     ////////////////////////////////
     // storage variables
     ////////////////////////////////
@@ -265,18 +263,7 @@ mod CCNFTS {
             let (bestMove, isWhiteCheckmated) = searchMove(board, 1 );
             /// if he does not  
             if (bestMove == 0) {
-                /// reset the board 
-                /// means player has won   
-                /// 
-                ///  you won minted some large no of token to it ok 
-                // 0 -loss 
-                // 1 - win 
-                // 2 - match is going on
-                /// so the owner of the token can able to get the token 
-                /// import the erc20 token 
-             self.status.write(tokenId, 1) ;
-                /// minted winner nft to him              
-
+             self.status.write(tokenId, 1) ;            
             } 
             else {
                 // ai move  
@@ -291,11 +278,7 @@ mod CCNFTS {
            ( board , bestMove )
         }
 
-
-
-
         fn playmove(ref self: ContractState, _move: u256  ) {
-            // let _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
             let caller = get_caller_address() ; //  callerfrom ; 
             // through the caller we get the token id 
             let tokenId =  self.get_token_Id(caller);
@@ -414,6 +397,13 @@ mod CCNFTS {
     }
 
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
     #[external(v0)]
     #[generate_trait]
     impl IERC721Impl of IERC721Trait {
@@ -432,27 +422,6 @@ mod CCNFTS {
             SYMBOL
         }
     
-    
-        //
-    
-    
-        // so i think we have to make the mapping of the tokenid and their current board state 
-        // and if the current board state is of checkmate and that token id is of the player then he can able to withdraw the token
-    
-        // how we check that the the token id is from what 
-        // the caller id would then be what 
-    
-    
-    
-    
-        // mint nft 
-        // create the tba account 
-        // transfer the token to the tba account
-    
-        // what information does it hold about the nft 
-    
-        // get tokenURI link to json file metadata
-        // jsonMetaFile = BaseURI + TOKEN_ID + .json
     
         fn tokenURI(self: @ContractState, token_id: u256) -> Array<felt252> {
            
@@ -773,15 +742,6 @@ mod CCNFTS {
     
             // emit Transfer event
             self.emit(Transfer { from: Zeroable::zero(), to: to, token_id: token_id });
-        }
-    
-        // get baseURI()
-        fn _getBaseURI(self: @ContractState) -> Array<felt252> {
-            let mut baseLinkArr = ArrayTrait::new();
-            baseLinkArr.append(BASE_URI_PART_1);
-            baseLinkArr.append(BASE_URI_PART_2);
-            baseLinkArr.append(BASE_URI_PART_3);
-            baseLinkArr
         }
     }
     
