@@ -212,7 +212,6 @@ mod CCNFTS {
         fn getname(self: @ContractState) -> felt252 {
             'CCNFTS'
         }
-        // get_symbol function returns NFT's token symbol
         fn getsymbol(self: @ContractState) -> felt252 {
             'CCNFTS'
         }
@@ -245,29 +244,49 @@ mod CCNFTS {
             self.board_to_moves.read(token_id)
         }
 
-        // iwant to make this happen that will be happen so lets do it ok
-        // no other so
+        ///@notice Plays a move in the chess game by the user and
+        /// responds with an AI move.
+        /// The function checks for move legality, applies the player's move,
+        /// then determines and applies the AI's move.
+        /// @params `_board`: The current state of the chess board represented as a `u256` value.
+        /// @params `_move`: The player's move, encoded as a `u256` value.
+        /// @params `_depth`: The search depth for AI move calculation (not used directly here but
+        /// passed for potential AI move logic).
+        /// @params- `tokenId`: A unique identifier for the player's game.
+        /// A tuple containing ( u256 , u256 ):
+        /// @return The updated chess board state after both the player and AI moves.
+        /// @return The best move calculated for the AI.
 
-        //called by the system
         fn _play_move_chess(
             ref self: ContractState, _board: u256, _move: u256, _depth: u256, tokenId: u256
         ) -> (u256, u256) {
-            // first we have to check the move is leagal or not
-
+            // Check if the move is legal and ensure the game status allows for a move.
+            // If the move is illegal or the game is not in progress (status != 0), raise an
+            // assertion failure.
             if !isLegalMove(_board, _move) || self.status.read(tokenId) != 0 {
                 assert!(false, "illegal move");
             }
             // then we have to apply the move
             let mut board = applyMove(_board, _move);
-            ///// we have to take care of the ai move
+            // After the player's move, determine the AI's best move by calling `searchMove`.
+            // The `searchMove` function returns:
+            // - `bestMove`: The AI's calculated best move.
+            // - `isWhiteCheckmated`: A flag indicating if white is checkmated.
             let (bestMove, isWhiteCheckmated) = searchMove(board, 1);
-            /// if he does not
+
+            // If the AI could not find a move (`bestMove == 0`), the game ends in a draw or the
+            // player wins.
+            // Update the game status to 1, indicating the game is over.
             if (bestMove == 0) {
                 self.status.write(tokenId, 1);
             } else {
-                // ai move
+                // If the AI found a valid move, apply the AI's move to the board.
                 board = applyMove(board, bestMove);
 
+                // Check if the AI has checkmated the player.
+                // If white is checkmated, the player has lost, and we update the status to 2 (game
+                // over, player lost).
+                // This also blocks further moves by the player.
                 if (isWhiteCheckmated) {
                     // player have lost
                     self.status.write(tokenId, 2);
@@ -276,7 +295,13 @@ mod CCNFTS {
             }
             (board, bestMove)
         }
-
+        /// @notice Executes a move in the chess game, updates the board state, and handles token
+        /// transfers based on the game outcome.
+        /// This function is invoked by a player when they make a move, and it also handles the AI's
+        /// response.
+        /// @return
+        /// - `self`: A reference to the contract state.
+        /// - `_move`: The player's move encoded as a `u256` value.
         fn playmove(ref self: ContractState, _move: u256) {
             let caller = get_caller_address(); //  callerfrom ; 
             // through the caller we get the token id
@@ -284,33 +309,41 @@ mod CCNFTS {
             // through the tokenid we found the current board state ;
             let current_board_state = self.board_current_state(tokenId);
             let depth = self.hardness_Depth(tokenId);
+            // Perform the player's move and calculate the AI's response by calling
+            // `_play_move_chess`.
+            // This returns the new board state after the AI's move and the best move made by the
+            // AI.
             let (new_chess_board_after_ai, bestMove) = self
                 ._play_move_chess(current_board_state, _move, depth, tokenId);
-            self.update_board_current_state(tokenId, new_chess_board_after_ai);
-            assert!(self.puzzle_allowed_to_play.read(tokenId), "Puzzle is not allowed to play");
-            //// let start working with the tokenIds ok which will contain the board and move made
-            //// during this ok
 
-            // for the first it is zero
+            self.update_board_current_state(tokenId, new_chess_board_after_ai);
+            // Ensure that the puzzle (game) is still allowed to be played.
+            assert!(self.puzzle_allowed_to_play.read(tokenId), "Puzzle is not allowed to play");
+            // Encode the move made by the player and the AI's move into a single encoded value.
+
             let encoded_move = calculate_move_enoded(1, _move, bestMove);
+            // Mint a move token for the caller with the updated chess board state and the encoded
+            // move.
+
             self.mintmove(caller, tokenId, new_chess_board_after_ai, encoded_move);
 
-            // safe the board to the token id respectaviely
+            // If the player has won the game, they are allowed to withdraw the ERC20 tokens.
 
             if self.checkWinngstatus(tokenId) == 1 {
-                // if the player has won then he can able to withdraw the token
                 let erc20_dispatcher = IERC20Dispatcher {
                     contract_address: self.erc20_token.read()
                 };
+                // Transfer the ERC20 token from the minted address to the caller (the winner).
+
                 erc20_dispatcher
                     .transfer_from(
                         self.MintedAddress.read(),
                         caller,
                         self.board_amt.read(tokenId).try_into().unwrap()
                     );
-            } else if self.checkWinngstatus(tokenId) == 2 {
-                // the player hash loss the chess so the token which is minted is goes to the mint
-                // board creator
+            } // If the AI has won, the minted ERC20 tokens are transferred to the board creator.
+            else if self.checkWinngstatus(tokenId) == 2 {
+                // Retrieve the board creator's address for the current token ID.
                 let board_creator = self.board_creator.read(tokenId);
                 let erc20_dispatcher = IERC20Dispatcher {
                     contract_address: self.erc20_token.read()
@@ -322,6 +355,7 @@ mod CCNFTS {
                         self.board_amt.read(tokenId).try_into().unwrap()
                     );
             }
+            // Emit an event after the move, logging important game details.
             self
                 .emit(
                     PlayMoveEvent {
@@ -354,33 +388,64 @@ mod CCNFTS {
         fn get_total_puzzle_supply(self: @ContractState) -> u256 {
             self.board_puzzle_supply.read()
         }
+        /// Mints a new chess board and assigns it to a user.
+        /// This function also initializes the board state, sets AI difficulty, and allows the game
+        /// to be played.
+        ///
+        /// @params:
+        /// - `self`: A reference to the contract state.
+        /// - `to`: The address of the user who will receive the minted board.
+        /// - `_board`: The initial board state represented as a `u256` value.
+        /// - `_depth`: The AI difficulty level (search depth) for this board.
+
         fn mintboard(ref self: ContractState, to: ContractAddress, _board: u256, _depth: u256) {
             // here the tokenID would be the boardSupply
             let board_supply = self.board_puzzle_supply.read();
+            // Ensure the number of minted boards doesn't exceed 64. If it does, the minting process
+            // is halted.
             assert!(board_supply < 64, "Board supply is full");
-
             let total_supply = self.count.read();
+            // Generate a unique token ID using the board supply value (board number) and initialize
+            // the move count to 0.
             let token_id = encodeTokenId(board_supply, 0);
+            // Safely mint the token and assign ownership to the recipient (specified by `to`).
             self._safe_mint(to, token_id);
+            // Set the creator of the board (the `to` address) for this specific token ID.
             self.board_creator.write(token_id, to);
+            // Allow the puzzle (game) to be played by setting the respective flag to `true`.
             self.puzzle_allowed_to_play.write(token_id, true);
-            // let board: felt252 = _board.try_into().unwrap();
+            // Store the initial board state and move number in the `tokenid_to_uriData` mapping.
+            // The move number is initialized to 0 (indicating no moves have been made yet).
             self.tokenid_to_uriData.write(token_id, (_board, 0));
-            // self._set_token_uri(token_id, board );
+            // Write the AI difficulty (search depth) for the token ID (board).
             self.ai_hard.write(token_id, _depth);
+            // Store the minted board's state in the `board_mintedstate` mapping, associating it
+            // with the token ID.
             self.board_mintedstate.write(token_id, _board);
+            // Set the current board state (same as the initial board state) in the
+            // `board_currentstate` mapping.
             self.board_currentstate.write(token_id, _board);
+            // Increment the board supply counter by 1 to account for the newly minted board.
             self.board_puzzle_supply.write(board_supply + 1);
             self.count.write(total_supply + 1);
-            /// emit the event of minted ok
-            /// to get the token id ok then what i think is good ok
+            // Emit a `MintBoard` event, logging the caller and the token ID for the newly minted
+            // board.
             self.emit(MintBoard { caller: to, token_id: token_id });
         }
         fn get_encode_tokenId(self: @ContractState, board_id: u256, move_id: u256) -> u256 {
             encodeTokenId(board_id, move_id)
         }
 
-        /// new board and moves
+        /// Mints a new move for an existing chess board.
+        /// This function assigns a unique token ID to the move and updates the board's state
+        /// accordingly.
+        ///
+        /// @params :
+        /// - `self`: A reference to the contract state.
+        /// - `to`: The address of the player or recipient who made the move.
+        /// - `board_id`: The ID of the chess board to which the move is applied.
+        /// - `_board`: The updated board state after the move.
+        /// - `encoded_move`: The move encoded as a `u256` value.
         fn mintmove(
             ref self: ContractState,
             to: ContractAddress,
@@ -388,19 +453,25 @@ mod CCNFTS {
             _board: u256,
             encoded_move: u256
         ) {
-            // here the tokenid would be the board id and the token id would be the move id
-            // encode the boardid and moveid ok
             let total_supply = self.count.read();
             let move_id_supply = self.board_to_moves.read(board_id) + 1;
+            // Ensure that no more than 64 moves can be made for any given board.
             assert!(move_id_supply < 64, "not more move is possible");
             let token_id_encode = encodeTokenId(board_id, move_id_supply);
             self._safe_mint(to, token_id_encode);
+            // (Optional step, currently commented out): Set the token URI for the newly minted move
+            // token.
+            // The URI can represent the board state after the move, which would be stored
+            // off-chain.
             // let board: felt252 = _board.try_into().unwrap();
-            // self._set_token_uri(token_id_encode , board ) ;
-            // update the move supply
+            // self._set_token_uri(token_id_encode , board );
+            // Update the move supply for the board by writing the new move count to
+            // `board_to_moves`.
             self.board_to_moves.write(board_id, move_id_supply);
-            // write the token tokenid_uri data
+            // Store the new board state and the encoded move in `tokenid_to_uriData` for the newly
+            // minted move token.
             self.tokenid_to_uriData.write(token_id_encode, (_board, encoded_move));
+            // Increment the total token supply by 1 to reflect the newly minted move token.
             self.count.write(total_supply + 1);
         }
     }
