@@ -182,8 +182,7 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
 /// @notice Uses piece-square tables (PSTs) to evaluate how ``good'' a move is.
 /// @dev The PSTs were selected semi-arbitrarily with chess strategies in mind (e.g. pawns are
 /// good in the center). Updating them changes the way the engine ``thinks.'' Each piece's PST
-/// is bitpacked into as few uint256s as possible for efficiency (see {Engine-getPst} and
-/// {Engine-getPstTwo}):
+/// is bitpacked into as few uint256s as possible for efficiency .
 ///          Pawn                Bishop               Knight                   Rook
 ///    20 20 20 20 20 20    62 64 64 64 64 62    54 56 54 54 56 58    100 100 100 100 100 100
 ///    30 30 30 30 30 30    64 66 66 66 66 64    56 60 64 64 60 56    101 102 102 102 102 101
@@ -211,7 +210,7 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
 ///                                      | Queen  | 180   |
 ///                                      | King   | 4000  |
 /// The king's value just has to be sufficiently larger than 180 * 7 = 1260 (i.e. equivalent to
-/// 7 queens) because check/checkmates are detected lazily (see {Engine-generateMoves}).
+/// 7 queens) because check/checkmates are detected lazily .
 ///
 /// The evaluation of a move is given by
 ///                Δ(PST value of the moved piece) + (PST value of any captured pieces).
@@ -371,8 +370,7 @@ fn getPst(_type: u256) -> u256 {
     return 0xF9AF98F96F96F98F9AF9AF98F96F96F98F9AF9CF9AF98F98F9AF9B;
 }
 /// @notice Maps a queen or king to the second half of its PST (see {Engine-getPst}).
-/// @param _type A piece type defined in {Chess}. Must be a queen or a king (see
-/// {Engine-getPst}).
+/// @param _type A piece type defined in {Chess}. Must be a queen or a king .
 /// @return The PST corresponding to `_type`.
 fn getPstTwo(_type: u256) -> u256 {
     if (_type == 5) {
