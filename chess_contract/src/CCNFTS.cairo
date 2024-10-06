@@ -91,10 +91,7 @@ mod CCNFTS {
     use ccnfts::ChessLogic::{
         searchMove, isLegalMove, applyMove, encodeTokenId, calculate_move_enoded
     };
-    use starknet::{
-        ContractAddress, get_caller_address,
-        storage::Map
-    };
+    use starknet::{ContractAddress, get_caller_address, storage::Map};
 
     use super::IBoardNFT;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -627,7 +624,7 @@ mod CCNFTS {
             // check that to address is not zero
             assert(to.is_non_zero(), 'ERC721: transfer to 0 address');
 
-            // todo zero address error 
+            // todo zero address error
             // let addressZero: ContractAddress = zero();
             // // remove previously made approvals
             // self.token_approvals.write(token_id, from);
@@ -641,9 +638,9 @@ mod CCNFTS {
 
         fn _safe_mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
             self.owners.write(token_id, to);
-            // todo zero address error . 
-            // let addressZero: ContractAddress = zero();
-            // self.emit(Transfer { from: addressZero, to: to, token_id: token_id });
+            // todo zero address error .
+        // let addressZero: ContractAddress = zero();
+        // self.emit(Transfer { from: addressZero, to: to, token_id: token_id });
         }
     }
 

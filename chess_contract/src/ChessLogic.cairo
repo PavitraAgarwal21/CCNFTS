@@ -73,6 +73,7 @@ fn newAS() -> ArrayStack {
         main_stack: ArrayTrait::<u256>::new(), aux_stack: ArrayTrait::<u256>::new(), size: 0,
     }
 }
+
 //////////////////////////////////////////////////
 //                                              //
 //  Chess AI Implementation                     //
@@ -81,8 +82,6 @@ fn newAS() -> ArrayStack {
 //    such as move generation and evaluation.   //
 //                                              //
 //////////////////////////////////////////////////
-///
-///
 
 pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
     let mut moves = generateMoves(_board);
@@ -120,16 +119,10 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {
         return 0;
     }
-    // println!(" board {} depth {}", _board, _depth);
     let mut moves = generateMoves(_board);
-    // if (moves(0) == 0) {
-    //     return 0;
-    // }
-    // println!("moves {:?}", get(@moves, 0));
     if (get(@moves, 0) == 0) {
         return 0;
     }
-
     let mut bestScore: i128 = -4_196;
     let mut currentScore: i128 = 0;
     let mut bestMove: u256 = 0;
@@ -138,7 +131,6 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
         let mut movePartition = get(@moves, i);
         while movePartition != 0 {
             currentScore = evaluateMove(_board, movePartition & 0xFFF);
-            // println!("evaluate is corrected ");
             if (currentScore > bestScore) {
                 bestScore = currentScore;
                 bestMove = movePartition & 0xFFF;
@@ -164,10 +156,6 @@ fn evaluateMove(_board: u256, _move: u256) -> i128 {
         - 7;
 
     let toIndex: u256 = 6 * ((U256BitShift::shr(_move & 0x3F, 3))) + ((_move & 0x3F) & 7) - 7;
-
-    // println!("nnnnsgdv {}" , U256BitShift::shl(U256BitShift::shr(_move , 6 ),2));
-    // println!("wefvcrs {} " , U256BitShift::shr(_board ,(U256BitShift::shl(U256BitShift::shr(_move
-    // , 6 ),2)))&7);
     let pieceAtFromIndex: u256 = U256BitShift::shr(
         _board, (U256BitShift::shl(U256BitShift::shr(_move, 6), 2))
     )
@@ -175,15 +163,6 @@ fn evaluateMove(_board: u256, _move: u256) -> i128 {
 
     let pieceAtToIndex: u256 = (U256BitShift::shr(_board, (U256BitShift::shl(_move & 0x3F, 2)))
         & 7);
-
-    // println!(
-    //     " move - {} fromIndex - {}  toIndex - {} pieceAtFromIndex - {} pieceAtToIndex - {}  ",
-    //     _move,
-    //     fromIndex,
-    //     toIndex,
-    //     pieceAtFromIndex,
-    //     pieceAtToIndex
-    // );
 
     let mut oldPst: u256 = 0;
     let mut newPst: u256 = 0;
@@ -335,32 +314,35 @@ fn getPstTwo(_type: u256) -> u256 {
 //                                              //
 //////////////////////////////////////////////////
 
+/// @notice Takes in a board position, and applies the move `_move` to it.
+/// @dev After applying the move, the board's perspective is updated (so that NEXT PLAYER CAN PLAY
+/// THEIR MOVE ). Thus, @param _board The board to apply the move to.
+/// @param _move The move to apply.
+/// @return The reversed board after applying `_move` to `_board`.
 pub fn applyMove(mut _board: u256, _move: u256) -> u256 {
-    // u256 piece = (_board >> ((_move >> 6) << 2)) & 0xF;
     let piece: u256 = U256BitShift::shr(_board, U256BitShift::shl(U256BitShift::shr(_move, 6), 2))
         & 0xF;
-    // to convert the four bit
-    //_board &= type(uint256).max ^ (0xF << ((_move >> 6) << 2));
-    // println!("befre {}" , _board);
-    // _board &= type(uint256).max ^ (0xF << ((_move >> 6) << 2));
     _board = _board
         & (max_u256 ^ (U256BitShift::shl(0xF, U256BitShift::shl(U256BitShift::shr(_move, 6), 2))));
-    // println!("{} " , piece) ;
-    // _board &= type(uint256).max ^ (0xF << ((_move & 0x3F) << 2));
-    _board = _board & (max_u256 ^ (U256BitShift::shl(0xF, U256BitShift::shl(_move & 0x3F, 2))));
 
+    _board = _board
+        & (max_u256
+            ^ (U256BitShift::shl(
+                0xF, U256BitShift::shl(_move & 0x3F, 2)
+            ))); // thus creating the system much more 
     // place the piece at the to index
-    // _board |= (piece << ((_move & 0x3F) << 2));
-
     _board = _board | U256BitShift::shl(piece, U256BitShift::shl(_move & 0x3F, 2));
 
     return rotate(_board);
 }
-// 331315573414633347629270044178747969067042435179612056278544678913
-// 331315573414633347629270044179246429565577835510633988326921601025
 
-// let now we have to working on the rotate the board
-fn rotate(mut _board: u256) -> u256 {
+/// @notice Flips the view of the game board by reversing its 4-bit sections.
+/// For example, `1100-0011` becomes `0011-1100`.
+/// @dev  Since the last bit exchanges positions with the 4th bit, changes the player .
+/// @param _board The board  to reverse .
+/// @return _board reversed.
+
+pub fn rotate(mut _board: u256) -> u256 {
     let mut rotatedBoard: u256 = 0;
     let mut i: u256 = 0;
     loop {
@@ -696,21 +678,26 @@ pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u
     return true;
 }
 
-// 0x3256230011111100000000000000000099999900BCDECB000000001
-// 0x3252562023000111111100000000000000000099999900BCDECB000000001
-pub fn working_with_array() {
-    let mut _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
-    // if (isLegalMove(_board, 1373 )) {
-//     // println!("Legal Move");
-//     // println!("before move {}" , _board) ;
-//     let mut new_board = applyMove(_board, 1373);
-//     //    println!("after move board {}", new_board) ;
-//     // println!("new board   {}", new_board);
-//     let (bestmove, iswhitecheckmated) = searchMove(new_board, 3);
-//     // println!("best move {} iswhitecheckmated {}", bestmove, iswhitecheckmated);
-//     new_board = applyMove(new_board, bestmove);
-//     // println!("_board  after ai move  {} ", new_board);
-// }
-// println!("new board {}", _play_move_chess(_board , 1373 , 3));
-}
 
+#[cfg(test)]
+mod tests {
+    // apply move test
+    use super::{rotate, applyMove};
+
+    #[test]
+    fn test_rotate() {
+        let mut _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
+        let rotated_board = rotate(_board);
+
+        let rotate_as = 0x100000000BCE0CB00090090000D9919000001000010000100326523000000000;
+        assert(rotated_board == rotate_as, 'not rotated properly ');
+    }
+
+    #[test]
+    fn test_apply_move() {
+        let mut _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
+        let new_board = applyMove(_board, 1373);
+        let new_board_as = 0x100000000BCE0CB00090000000D9999000001000010000100326523000000000;
+        assert(new_board == new_board_as, 'not applied properly');
+    }
+}
