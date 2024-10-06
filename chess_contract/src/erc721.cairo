@@ -163,7 +163,7 @@ mod ERC721 {
         }
 
         ////////////////////////////////
-        // set_approval_for_all function approves an operator to spend all tokens 
+        // set_approval_for_all function approves an operator to spend all tokens
         ////////////////////////////////
         fn set_approval_for_all(
             ref self: ContractState, operator: ContractAddress, approved: bool

@@ -111,7 +111,7 @@ We use the Negamax algorithm for the AI implementation.
 ## Files and Structure
 
 - **chess_test.cairo**: This file contains the implementation of the chess logic and AI. It handles the rules of chess, validates moves, and includes AI to play against users.  
-  [View File](https://github.com/PavitraAgarwal21/CCNFTS/blob/main/chess_contract/src/chess_test.cairo)
+  [View File](https://github.com/PavitraAgarwal21/CCNFTS/blob/main/chess_contract/src/ChessLogic.cairo)
 
 - **CCNFTS.cairo**: This file outlines the token economics and the main functionalities for handling NFTs. It includes the logic for creating, transferring, and managing chess piece NFTs.  
   [View File](https://github.com/PavitraAgarwal21/CCNFTS/blob/main/chess_contract/src/CCNFTS.cairo)

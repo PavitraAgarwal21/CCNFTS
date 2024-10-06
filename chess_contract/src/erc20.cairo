@@ -30,18 +30,18 @@ pub trait IERC20<TContractState> {
 #[starknet::contract]
 pub mod erc20 {
     use core::num::traits::Zero;
-    use starknet::get_caller_address;
-    use starknet::contract_address_const;
-    use starknet::ContractAddress;
-
+    use starknet::{
+        ContractAddress, get_caller_address, contract_address_const ,
+        storage::Map
+    };
     #[storage]
     struct Storage {
         name: felt252,
         symbol: felt252,
         decimals: u8,
         total_supply: felt252,
-        balances: LegacyMap::<ContractAddress, felt252>,
-        allowances: LegacyMap::<(ContractAddress, ContractAddress), felt252>,
+        balances: Map::<ContractAddress, felt252>,
+        allowances: Map::<(ContractAddress, ContractAddress), felt252>,
     }
 
     #[event]

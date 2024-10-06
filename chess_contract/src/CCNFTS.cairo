@@ -1,6 +1,4 @@
-
-use starknet::ContractAddress; 
-use starknet::ClassHash;
+use starknet::ContractAddress;
 use starknet::account::Call;
 #[starknet::interface]
 pub trait IBoardNFT<TContractState> {
@@ -8,20 +6,30 @@ pub trait IBoardNFT<TContractState> {
     fn getsymbol(self: @TContractState) -> felt252;
     fn hardness_Depth(self: @TContractState, token_id: u256) -> u256;
     fn board_minted_state(self: @TContractState, token_id: u256) -> u256;
-    fn get_move_total_supply(self : @TContractState ,token_id : u256) -> u256 ; 
+    fn get_move_total_supply(self: @TContractState, token_id: u256) -> u256;
     fn board_current_state(self: @TContractState, token_id: u256) -> u256;
     fn update_board_current_state(ref self: TContractState, token_id: u256, new_state_board: u256);
-    fn get_minted_token_amount( self : @TContractState , token_id : u256 ) -> u256 ; 
-    fn get_token_Id(self: @TContractState, caller: ContractAddress) -> u256 ; 
-    fn _play_move_chess(ref self : TContractState ,  _board: u256, _move: u256, _depth: u256 , tokenId : u256  ) -> (u256 , u256) ; 
-        fn playmove(ref self: TContractState, _move: u256  )  ; 
-    fn getUpdatedBoardStatepublic(self: @TContractState,  tokenboundaccount : ContractAddress ) -> u256 ; 
-    fn checkWinngstatus(self: @TContractState, token_id: u256) -> u8 ; 
-    fn makePuzzle(ref self: TContractState, _board: u256, _depth: u256 , _amount : u256) ; 
-    fn  mintmove (ref self: TContractState, to: ContractAddress, board_id : u256 , _board : u256 , encoded_move : u256  ) ; 
-    fn mintboard (ref self: TContractState, to: ContractAddress, _board : u256 , _depth : u256  ) ; 
-    fn get_encode_tokenId(self : @TContractState , board_id : u256 , move_id : u256) -> u256 ; 
-    fn get_total_puzzle_supply(self : @TContractState ) -> u256  ; 
+    fn get_minted_token_amount(self: @TContractState, token_id: u256) -> u256;
+    fn get_token_Id(self: @TContractState, caller: ContractAddress) -> u256;
+    fn _play_move_chess(
+        ref self: TContractState, _board: u256, _move: u256, _depth: u256, tokenId: u256
+    ) -> (u256, u256);
+    fn playmove(ref self: TContractState, _move: u256);
+    fn getUpdatedBoardStatepublic(
+        self: @TContractState, tokenboundaccount: ContractAddress
+    ) -> u256;
+    fn checkWinngstatus(self: @TContractState, token_id: u256) -> u8;
+    fn makePuzzle(ref self: TContractState, _board: u256, _depth: u256, _amount: u256);
+    fn mintmove(
+        ref self: TContractState,
+        to: ContractAddress,
+        board_id: u256,
+        _board: u256,
+        encoded_move: u256
+    );
+    fn mintboard(ref self: TContractState, to: ContractAddress, _board: u256, _depth: u256);
+    fn get_encode_tokenId(self: @TContractState, board_id: u256, move_id: u256) -> u256;
+    fn get_total_puzzle_supply(self: @TContractState) -> u256;
 }
 
 
@@ -46,8 +54,7 @@ pub trait IERC20<TContractState> {
     fn increase_allowance(ref self: TContractState, spender: ContractAddress, added_value: felt252);
     fn decrease_allowance(
         ref self: TContractState, spender: ContractAddress, subtracted_value: felt252
-    ); 
-    
+    );
 }
 
 
@@ -76,24 +83,27 @@ mod CCNFTS {
     ////////////////////////////////
     // library imports
     ////////////////////////////////
-    ///  use starknet::ContractAddress;
-    use starknet::get_contract_address;
     use core::array::ArrayTrait;
-    use core::nullable::match_nullable;
-    use core::zeroable::Zeroable;
+    use core::num::traits::zero::Zero;
     use core::traits::Into;
-    use starknet::{ContractAddress, get_caller_address};
     use super::IAccountDispatcher;
     use super::IAccountDispatcherTrait;
-    use ccnfts::chess_test::{searchMove, isLegalMove, applyMove, Move , encodeTokenId , calculate_move_enoded };
+    use ccnfts::ChessLogic::{
+        searchMove, isLegalMove, applyMove, encodeTokenId, calculate_move_enoded
+    };
+    use starknet::{
+        ContractAddress, get_caller_address,
+        storage::Map
+    };
+
     use super::IBoardNFT;
-    use super::{IERC20Dispatcher, IERC20DispatcherTrait}; 
+    use super::{IERC20Dispatcher, IERC20DispatcherTrait};
     const NAME: felt252 = 0x43434e465453;
     const SYMBOL: felt252 = 0x43434e465453;
 
 
     const ADMIN_ADDRESS: felt252 =
-    0x004835541Fd87cdDBc3B48Ad08e53FfA1E4D55aB21a46900A969DF326C9276326;
+        0x004835541Fd87cdDBc3B48Ad08e53FfA1E4D55aB21a46900A969DF326C9276326;
     const VERSION_CODE: u256 = 202311150001001;
     const MAX_SUPPLY: u256 = 100000;
     const INTERFACE_ERC165: felt252 = 0x01ffc9a7;
@@ -108,57 +118,51 @@ mod CCNFTS {
     struct Storage {
         name: felt252,
         symbol: felt252,
-        owners: LegacyMap::<u256, ContractAddress>,
-        balances: LegacyMap::<ContractAddress, u256>,
+        owners: Map::<u256, ContractAddress>,
+        balances: Map::<ContractAddress, u256>,
         count: u256, //Total number of NFTs minted
-        token_approvals: LegacyMap::<u256, ContractAddress>,
-        operator_approvals: LegacyMap::<(ContractAddress, ContractAddress), bool>,
-        ai_hard: LegacyMap::<u256, u256>,
-        board_mintedstate: LegacyMap::<u256, u256>,
-        //this may or may not be usefull but now keep it there 
-        board_currentstate: LegacyMap::<u256, u256>,
+        token_approvals: Map::<u256, ContractAddress>,
+        operator_approvals: Map::<(ContractAddress, ContractAddress), bool>,
+        ai_hard: Map::<u256, u256>,
+        board_mintedstate: Map::<u256, u256>,
+        board_currentstate: Map::<u256, u256>,
         MintedAddress: ContractAddress,
-        board_amt : LegacyMap::<u256, u256> , 
-        status : LegacyMap::<u256, u8> , //  loss 1 - win 2 - match is going on -0 
-        //// which tokenId is the puzzle 
-        puzzle_allowed_to_play : LegacyMap::<u256, bool > , // tokenid => true // allowed to play 
-        board_to_moves : LegacyMap::<u256, u256> ,
-        tokenid_to_uriData : LegacyMap::<u256, (u256, u256 )> ,
-        erc20_token: ContractAddress,  
-        board_puzzle_supply : u256 , 
-        board_creator : LegacyMap::<u256, ContractAddress> ,
-        total_board_minted : u256 , 
-
+        board_amt: Map::<u256, u256>,
+        status: Map::<u256, u8>,
+        puzzle_allowed_to_play: Map::<u256, bool>,
+        board_to_moves: Map::<u256, u256>,
+        tokenid_to_uriData: Map::<u256, (u256, u256)>,
+        erc20_token: ContractAddress,
+        board_puzzle_supply: u256,
+        board_creator: Map::<u256, ContractAddress>,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        PlayMoveEvent : PlayMoveEvent ,
+        PlayMoveEvent: PlayMoveEvent,
         Approval: Approval,
         Transfer: Transfer,
         ApprovalForAll: ApprovalForAll,
-        MintBoard : MintBoard
+        MintBoard: MintBoard
     }
 
     #[derive(Drop, starknet::Event)]
     struct MintBoard {
-        caller : ContractAddress , 
-       token_id : u256 , 
+        caller: ContractAddress,
+        token_id: u256,
     }
 
     #[derive(Drop, starknet::Event)]
     struct PlayMoveEvent {
         caller: ContractAddress,
-        currentBoardState : u256 ,
-        newBoardState : u256 , 
+        currentBoardState: u256,
+        newBoardState: u256,
         token_id_move: u256,
         token_id_board: u256,
     }
 
 
-
- 
     #[derive(Drop, starknet::Event)]
     struct Approval {
         owner: ContractAddress,
@@ -191,20 +195,18 @@ mod CCNFTS {
     ////////////////////////////////
     // Constructor - initialized on deployment
     ////////////////////////////////
-    
+
     #[constructor]
-    fn constructor(ref self: ContractState, _minted_Address : ContractAddress  , erc20_token : ContractAddress ) {
+    fn constructor(
+        ref self: ContractState, _minted_Address: ContractAddress, erc20_token: ContractAddress
+    ) {
         self.MintedAddress.write(_minted_Address);
         self.erc20_token.write(erc20_token);
     }
 
     #[generate_trait]
     impl ConfigImpl of ConfigTrait {
-        fn initConfig(
-            ref self: ContractState
-        ) { 
-
-        }
+        fn initConfig(ref self: ContractState) {}
     }
 
 
@@ -231,241 +233,232 @@ mod CCNFTS {
         ) {
             self.board_currentstate.write(token_id, new_state_board);
         }
-        fn get_minted_token_amount( self : @ContractState , token_id : u256 ) -> u256 {
+        fn get_minted_token_amount(self: @ContractState, token_id: u256) -> u256 {
             self.board_amt.read(token_id)
-
         }
 
-        /// token bound account address so then we get the token id 
+        /// token bound account address so then we get the token id
         fn get_token_Id(self: @ContractState, caller: ContractAddress) -> u256 {
             let account = IAccountDispatcher { contract_address: caller };
             let (_token_contract, token_id) = account.token();
             token_id
         }
 
-        fn get_move_total_supply(self : @ContractState ,token_id : u256) -> u256 {
+        fn get_move_total_supply(self: @ContractState, token_id: u256) -> u256 {
             self.board_to_moves.read(token_id)
-        } 
-
-        // iwant to make this happen that will be happen so lets do it ok 
-        // no other so 
-
-        //called by the system 
-        fn _play_move_chess(ref self : ContractState ,  _board: u256, _move: u256, _depth: u256 , tokenId : u256  ) -> (u256 , u256) {
-            // first we have to check the move is leagal or not 
-
-            if !isLegalMove(_board, _move) || self.status.read(tokenId) != 0 {
-            assert!(false, "illegal move");
-            }
-            // then we have to apply the move  
-            let mut board = applyMove(_board, _move);
-            ///// we have to take care of the ai move 
-            let (bestMove, isWhiteCheckmated) = searchMove(board, 1 );
-            /// if he does not  
-            if (bestMove == 0) {
-             self.status.write(tokenId, 1) ;            
-            } 
-            else {
-                // ai move  
-                board = applyMove(board, bestMove);
-        
-                if (isWhiteCheckmated) {
-                    // player have lost 
-                 self.status.write(tokenId, 2) ;
-                    /// block him so that he cannot able to play the game 
-                }
-            }
-           ( board , bestMove )
         }
 
-        fn playmove(ref self: ContractState, _move: u256  ) {
-            let caller = get_caller_address() ; //  callerfrom ; 
-            // through the caller we get the token id 
-            let tokenId =  self.get_token_Id(caller);
-            // through the tokenid we found the current board state ; 
-            let current_board_state = self.board_current_state(tokenId);
-            let depth = self.hardness_Depth(tokenId) ;
-            /// now it is ready for the chess moves and let do the usefull chessstuff 
-            let (new_chess_board_after_ai , bestMove ) = self._play_move_chess(current_board_state, _move, depth , tokenId ) ;
-            //// now what we have to do is to update the current board state     
-            self.update_board_current_state(tokenId, new_chess_board_after_ai);
-            // let mut current_all_board  : Array<u256> = self.tba_tokenId_to_move_tokenId.read(tokenId) ;
-            //   current_all_board.append(tokenId) ;
-            // now we have to save the whole the old board state and the move and the new board state
+        // iwant to make this happen that will be happen so lets do it ok
+        // no other so
 
-            // board nft start from o t 63 
-            // move nft start from 1 to 63 
+        //called by the system
+        fn _play_move_chess(
+            ref self: ContractState, _board: u256, _move: u256, _depth: u256, tokenId: u256
+        ) -> (u256, u256) {
+            // first we have to check the move is leagal or not
 
-            assert!(self.puzzle_allowed_to_play.read(tokenId) , "Puzzle is not allowed to play") ;
-            //// let start working with the tokenIds ok which will contain the board and move made during this ok 
-            
-            // for the first it is zero 
-            let encoded_move = calculate_move_enoded(1 , _move , bestMove) ;
-            self.mintmove(caller, tokenId  ,  new_chess_board_after_ai , encoded_move ); 
-
-            // safe the board to the token id respectaviely 
-
-            if self.checkWinngstatus(tokenId) == 1  {
-                // if the player has won then he can able to withdraw the token
-                let erc20_dispatcher = IERC20Dispatcher { contract_address: self.erc20_token.read() }; 
-                erc20_dispatcher.transfer_from(self.MintedAddress.read(), caller , self.board_amt.read(tokenId).try_into().unwrap());
+            if !isLegalMove(_board, _move) || self.status.read(tokenId) != 0 {
+                assert!(false, "illegal move");
             }
-             else if self.checkWinngstatus(tokenId) == 2  {
-                // the player hash loss the chess so the token which is minted is goes to the mint board creator 
-                let board_creator =  self.board_creator.read(tokenId) ;
-                let erc20_dispatcher = IERC20Dispatcher { contract_address: self.erc20_token.read() }; 
-                erc20_dispatcher.transfer_from(self.MintedAddress.read(), board_creator , self.board_amt.read(tokenId).try_into().unwrap());
-             }
+            // then we have to apply the move
+            let mut board = applyMove(_board, _move);
+            ///// we have to take care of the ai move
+            let (bestMove, isWhiteCheckmated) = searchMove(board, 1);
+            /// if he does not
+            if (bestMove == 0) {
+                self.status.write(tokenId, 1);
+            } else {
+                // ai move
+                board = applyMove(board, bestMove);
+
+                if (isWhiteCheckmated) {
+                    // player have lost
+                    self.status.write(tokenId, 2);
+                    /// block him so that he cannot able to play the game
+                }
+            }
+            (board, bestMove)
+        }
+
+        fn playmove(ref self: ContractState, _move: u256) {
+            let caller = get_caller_address(); //  callerfrom ; 
+            // through the caller we get the token id
+            let tokenId = self.get_token_Id(caller);
+            // through the tokenid we found the current board state ;
+            let current_board_state = self.board_current_state(tokenId);
+            let depth = self.hardness_Depth(tokenId);
+            let (new_chess_board_after_ai, bestMove) = self
+                ._play_move_chess(current_board_state, _move, depth, tokenId);
+            self.update_board_current_state(tokenId, new_chess_board_after_ai);
+            assert!(self.puzzle_allowed_to_play.read(tokenId), "Puzzle is not allowed to play");
+            //// let start working with the tokenIds ok which will contain the board and move made
+            //// during this ok
+
+            // for the first it is zero
+            let encoded_move = calculate_move_enoded(1, _move, bestMove);
+            self.mintmove(caller, tokenId, new_chess_board_after_ai, encoded_move);
+
+            // safe the board to the token id respectaviely
+
+            if self.checkWinngstatus(tokenId) == 1 {
+                // if the player has won then he can able to withdraw the token
+                let erc20_dispatcher = IERC20Dispatcher {
+                    contract_address: self.erc20_token.read()
+                };
+                erc20_dispatcher
+                    .transfer_from(
+                        self.MintedAddress.read(),
+                        caller,
+                        self.board_amt.read(tokenId).try_into().unwrap()
+                    );
+            } else if self.checkWinngstatus(tokenId) == 2 {
+                // the player hash loss the chess so the token which is minted is goes to the mint
+                // board creator
+                let board_creator = self.board_creator.read(tokenId);
+                let erc20_dispatcher = IERC20Dispatcher {
+                    contract_address: self.erc20_token.read()
+                };
+                erc20_dispatcher
+                    .transfer_from(
+                        self.MintedAddress.read(),
+                        board_creator,
+                        self.board_amt.read(tokenId).try_into().unwrap()
+                    );
+            }
             self
                 .emit(
                     PlayMoveEvent {
-                        caller: caller, 
+                        caller: caller,
                         currentBoardState: current_board_state,
                         newBoardState: new_chess_board_after_ai,
                         token_id_move: self.board_to_moves.read(tokenId),
                         token_id_board: tokenId
                     }
                 );
-        // i also want to create the mapping between the token id and the current board state and move it make it means just before , after and the move by him 
-        //token_id_to_board_state : LegacyMap::<u256, BoardState> ,
         }
 
-        fn getUpdatedBoardStatepublic(self: @ContractState,  tokenboundaccount : ContractAddress ) -> u256 {
-            let tokenId =  self.get_token_Id(tokenboundaccount);
+        fn getUpdatedBoardStatepublic(
+            self: @ContractState, tokenboundaccount: ContractAddress
+        ) -> u256 {
+            let tokenId = self.get_token_Id(tokenboundaccount);
             let current_board_state = self.board_current_state(tokenId);
-            return current_board_state ;
+            return current_board_state;
         }
 
         fn checkWinngstatus(self: @ContractState, token_id: u256) -> u8 {
             self.status.read(token_id)
         }
 
-        fn makePuzzle(ref self: ContractState, _board: u256, _depth: u256 , _amount : u256)  {
-           let caller = get_caller_address() ;
-           self.mintboard(caller, _board , _depth  ) ;
-        } 
-      
-        fn get_total_puzzle_supply(self : @ContractState ) -> u256 {
+        fn makePuzzle(ref self: ContractState, _board: u256, _depth: u256, _amount: u256) {
+            let caller = get_caller_address();
+            self.mintboard(caller, _board, _depth);
+        }
+
+        fn get_total_puzzle_supply(self: @ContractState) -> u256 {
             self.board_puzzle_supply.read()
         }
-        fn mintboard (ref self: ContractState, to: ContractAddress, _board : u256 , _depth : u256  ) {
-            // here the tokenID would be the boardSupply 
+        fn mintboard(ref self: ContractState, to: ContractAddress, _board: u256, _depth: u256) {
+            // here the tokenID would be the boardSupply
             let board_supply = self.board_puzzle_supply.read();
-            assert!(board_supply < 64 , "Board supply is full");
+            assert!(board_supply < 64, "Board supply is full");
 
-            let total_supply = self.count.read() ;
-                let token_id  = encodeTokenId(board_supply , 0 ) ;
-                self._safe_mint(to, token_id);
-                self.board_creator.write(token_id, to) ;
-                self.puzzle_allowed_to_play.write(token_id ,true ) ;
-                let board : felt252 =  _board.try_into().unwrap(); 
-                self.tokenid_to_uriData.write(token_id, ( _board , 0 ) ) ;
-                // self._set_token_uri(token_id, board );
-                self.ai_hard.write(token_id, _depth);
-                self.board_mintedstate.write(token_id, _board);
-                self.board_currentstate.write(token_id, _board);
-                self.board_puzzle_supply.write(board_supply + 1) ;
-                self.count.write(total_supply + 1) ;
-                /// emit the event of minted ok 
-                /// to get the token id ok then what i think is good ok 
-                self.emit(MintBoard { caller: to , token_id: token_id } ) ;
+            let total_supply = self.count.read();
+            let token_id = encodeTokenId(board_supply, 0);
+            self._safe_mint(to, token_id);
+            self.board_creator.write(token_id, to);
+            self.puzzle_allowed_to_play.write(token_id, true);
+            // let board: felt252 = _board.try_into().unwrap();
+            self.tokenid_to_uriData.write(token_id, (_board, 0));
+            // self._set_token_uri(token_id, board );
+            self.ai_hard.write(token_id, _depth);
+            self.board_mintedstate.write(token_id, _board);
+            self.board_currentstate.write(token_id, _board);
+            self.board_puzzle_supply.write(board_supply + 1);
+            self.count.write(total_supply + 1);
+            /// emit the event of minted ok
+            /// to get the token id ok then what i think is good ok
+            self.emit(MintBoard { caller: to, token_id: token_id });
+        }
+        fn get_encode_tokenId(self: @ContractState, board_id: u256, move_id: u256) -> u256 {
+            encodeTokenId(board_id, move_id)
+        }
 
-            }
-            fn get_encode_tokenId(self : @ContractState , board_id : u256 , move_id : u256) -> u256 {
-                encodeTokenId(board_id, move_id)
-            }
-
-            /// new board and moves 
-            fn  mintmove (ref self: ContractState, to: ContractAddress, board_id : u256 , _board : u256 , encoded_move : u256  ) {
-                // here the tokenid would be the board id and the token id would be the move id 
-                // encode the boardid and moveid ok 
-                let total_supply = self.count.read() ;
-                let move_id_supply = self.board_to_moves.read(board_id) + 1 ;
-                assert!(move_id_supply  < 64 , "not more move is possible");
-                let token_id_encode = encodeTokenId(board_id, move_id_supply) ; 
-                self._safe_mint(to, token_id_encode);
-                let board : felt252 =  _board.try_into().unwrap(); 
-                // self._set_token_uri(token_id_encode , board ) ; 
-                // update the move supply 
-                self.board_to_moves.write(board_id, move_id_supply) ;   
-                // write the token tokenid_uri data       
-                self.tokenid_to_uriData.write(token_id_encode, ( _board , encoded_move ) ) ;
-                self.count.write(total_supply + 1) ;
-            }
-
-        
+        /// new board and moves
+        fn mintmove(
+            ref self: ContractState,
+            to: ContractAddress,
+            board_id: u256,
+            _board: u256,
+            encoded_move: u256
+        ) {
+            // here the tokenid would be the board id and the token id would be the move id
+            // encode the boardid and moveid ok
+            let total_supply = self.count.read();
+            let move_id_supply = self.board_to_moves.read(board_id) + 1;
+            assert!(move_id_supply < 64, "not more move is possible");
+            let token_id_encode = encodeTokenId(board_id, move_id_supply);
+            self._safe_mint(to, token_id_encode);
+            // let board: felt252 = _board.try_into().unwrap();
+            // self._set_token_uri(token_id_encode , board ) ;
+            // update the move supply
+            self.board_to_moves.write(board_id, move_id_supply);
+            // write the token tokenid_uri data
+            self.tokenid_to_uriData.write(token_id_encode, (_board, encoded_move));
+            self.count.write(total_supply + 1);
+        }
     }
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-    #[external(v0)]
+    #[abi(per_item)]
     #[generate_trait]
     impl IERC721Impl of IERC721Trait {
-        ////#### Read Functions ###////
-    
-        // EPI-721 https://eips.ethereum.org/EIPS/eip-721
-        //***** ERC721 Metadata *****//
-    
-        // get_name function returns NFT's name
         fn name(self: @ContractState) -> felt252 {
             NAME
         }
-    
-        // get_symbol function returns NFT's token symbol
         fn symbol(self: @ContractState) -> felt252 {
             SYMBOL
         }
-    
-    
         fn tokenURI(self: @ContractState, token_id: u256) -> Array<felt252> {
-           
-                assert(self._exists(token_id), 'ERC721: invalid token ID');
-    
-                let mut link = ArrayTrait::new();
-                let (board , encodemove)  =  self.tokenid_to_uriData.read(token_id) ; 
-    
-                let board_felt : felt252 = board.try_into().unwrap(); 
-                let move_felt : felt252 = encodemove.try_into().unwrap();
-    
-                if encodemove != 0 {
-                    link.append(board_felt);
-                    link.append(move_felt);
-                }
+            assert(self._exists(token_id), 'ERC721: invalid token ID');
+
+            let mut link = ArrayTrait::new();
+            let (board, encodemove) = self.tokenid_to_uriData.read(token_id);
+
+            let board_felt: felt252 = board.try_into().unwrap();
+            let move_felt: felt252 = encodemove.try_into().unwrap();
+
+            if encodemove != 0 {
                 link.append(board_felt);
-    
-              return link ; 
-            
+                link.append(move_felt);
+            }
+            link.append(board_felt);
+
+            return link;
         }
-        // Compatibility
         fn token_uri(self: @ContractState, token_id: u256) -> Array<felt252> {
             self.tokenURI(token_id)
         }
-    
-    
         // Contract-level metadata - https://docs.opensea.io/docs/contract-level-metadata
         // NFT marketplaces use contractURI json file to get information about your collection
         fn contractURI(self: @ContractState) -> Array<felt252> {
-            //In this example we use the json file of the first NFT in the collection, but you should customize it to return the correct file
+            //In this example we use the json file of the first NFT in the collection, but you
+            //should customize it to return the correct file
             self.tokenURI(1)
         }
         // Compatibility
         fn contract_uri(self: @ContractState) -> Array<felt252> {
             self.contractURI()
         }
-    
+
         // get maxSupply
         fn maxSupply(self: @ContractState) -> u256 {
             MAX_SUPPLY
         }
-    
+
         //***** ERC721 Enumerable *****//
-    
+
         // get current total nfts minted
         fn totalSupply(self: @ContractState) -> u256 {
             self.count.read()
@@ -474,9 +467,9 @@ mod CCNFTS {
         fn total_supply(self: @ContractState) -> u256 {
             self.totalSupply()
         }
-    
+
         //*****  ERC-2981 EIP165 - NFT Royalty Standard *****//
-    
+
         // get - check supportsInterface
         fn supportsInterface(self: @ContractState, interfaceID: felt252) -> bool {
             interfaceID == INTERFACE_ERC165
@@ -487,9 +480,9 @@ mod CCNFTS {
         fn supports_interface(self: @ContractState, interfaceID: felt252) -> bool {
             self.supportsInterface(interfaceID)
         }
-    
+
         //***** ERC721 *****//
-    
+
         // get balance_of function returns token balance
         fn balanceOf(self: @ContractState, account: ContractAddress) -> u256 {
             assert(account.is_non_zero(), 'ERC721: address zero');
@@ -499,8 +492,8 @@ mod CCNFTS {
         fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
             self.balanceOf(account)
         }
-    
-    
+
+
         // get owner_of function returns owner of token_id
         fn ownerOf(self: @ContractState, token_id: u256) -> ContractAddress {
             let owner = self.owners.read(token_id);
@@ -511,7 +504,7 @@ mod CCNFTS {
         fn owner_of(self: @ContractState, token_id: u256) -> ContractAddress {
             self.ownerOf(token_id)
         }
-    
+
         // get_approved function returns approved address for a token
         fn getApproved(self: @ContractState, token_id: u256) -> ContractAddress {
             assert(self._exists(token_id), 'ERC721: invalid token ID');
@@ -521,7 +514,7 @@ mod CCNFTS {
         fn get_approved(self: @ContractState, token_id: u256) -> ContractAddress {
             self.getApproved(token_id)
         }
-    
+
         // get is_approved_for_all function returns approved operator for a token
         fn isApprovedForAll(
             self: @ContractState, owner: ContractAddress, operator: ContractAddress
@@ -534,9 +527,9 @@ mod CCNFTS {
         ) -> bool {
             self.isApprovedForAll(owner, operator)
         }
-    
+
         ////#### Write Functions ###////
-    
+
         // set approve function approves an address to spend a token
         ////////////////////////////////
         fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) {
@@ -549,8 +542,8 @@ mod CCNFTS {
             self.token_approvals.write(token_id, to);
             self.emit(Approval { owner: self.ownerOf(token_id), to: to, token_id: token_id });
         }
-    
-        // set_approval_for_all function approves an operator to spend all tokens 
+
+        // set_approval_for_all function approves an operator to spend all tokens
         fn setApprovalForAll(ref self: ContractState, operator: ContractAddress, approved: bool) {
             let owner = get_caller_address();
             assert(owner != operator, 'ERC721: approve to caller');
@@ -563,7 +556,7 @@ mod CCNFTS {
         ) {
             self.setApprovalForAll(operator, approved)
         }
-    
+
         // set transfer_from function is used to transfer a token
         fn transferFrom(
             ref self: ContractState, from: ContractAddress, to: ContractAddress, token_id: u256
@@ -574,7 +567,7 @@ mod CCNFTS {
             );
             self._transfer(from, to, token_id);
         }
-    
+
         // safe transfer an NFT
         fn safeTransferFrom(
             ref self: ContractState,
@@ -583,7 +576,8 @@ mod CCNFTS {
             token_id: u256,
             data: Span<felt252>
         ) {
-            // #Todo - Check that the receiving address is a contract address and that it supports INTERFACE_ERC721_RECEIVER
+            // #Todo - Check that the receiving address is a contract address and that it supports
+            // INTERFACE_ERC721_RECEIVER
             self.transferFrom(from, to, token_id)
         }
         // Compatibility
@@ -596,100 +590,12 @@ mod CCNFTS {
         ) {
             self.safeTransferFrom(from, to, token_id, data)
         }
-    // ab agayaga na mmaja bedu :-)
-    // ok lets go writh into it :-(
-    
     }
-    
-    // #################### ADMIN CONTROL FUNCTIONS #################### //
-    #[external(v0)]
-    #[generate_trait]
-    impl ERC721AdminImpl of ERC721AdminTrait {
-        // Airdrop
-        fn airdrop(ref self: ContractState, to: ContractAddress, amount: u256) {
-            // self._assert_admin();
-            let limit: u256 = 500;
-            assert(to.is_non_zero(), 'TO_IS_ZERO_ADDRESS');
-            assert(amount <= limit, 'Amount is too much');
-            self._assert_mintable(self.count.read() + amount);
-            let startID: u256 = self.count.read();
-            let mut i: u256 = 1;
-            loop {
-                if i > amount {
-                    break;
-                }
-                self._safe_mint(to, startID + i);
-                i += 1;
-            };
-            // Increase receiver balance
-            let receiver_balance = self.balances.read(to);
-            self.balances.write(to, receiver_balance + amount.into());
-    
-            // Increase total nft
-            self.count.write(startID + amount.into());
-        }
-        // Batch Airdrop - Airdrop to multiple receiving addresses, each receiving 1 NFT
-        fn batchAirdrop(ref self: ContractState, addressArr: Array<ContractAddress>) {
-            // self._assert_admin();
-            let totalAmount: u32 = addressArr.len();
-            let limit: u32 = 200;
-            assert(totalAmount <= limit, 'Input is too long');
-            self._assert_mintable(self.count.read() + totalAmount.into());
-            //Airdrop
-            let startID: u256 = self.count.read();
-            let mut i: u32 = 0;
-            let mut doneCount: u256 = 0;
-            loop {
-                if i > (totalAmount - 1) {
-                    break;
-                }
-                let toAddress: ContractAddress = *addressArr.at(i);
-                if (toAddress.is_non_zero()) {
-                    self._safe_mint(toAddress, startID + doneCount + 1);
-                    //update user balance
-                    let receiver_balance: u256 = self.balances.read(toAddress);
-                    self.balances.write(toAddress, receiver_balance + 1);
-                    //update done count
-                    doneCount = doneCount + 1;
-                }
-                i = i + 1;
-            };
-            // Increase total nft
-            self.count.write(startID + doneCount);
-        }
-    }
-    
-    // #################### PRIVATE Helper FUNCTION #################### //
-    #[external(v0)]
+
+
+    #[abi(per_item)]
     #[generate_trait]
     impl ERC721HelperImpl of ERC721HelperTrait {
-        fn svgimage(self: @ContractState, _tokenId: u256) -> Array<felt252> {
-            let mut svg = ArrayTrait::<felt252>::new();
-            let _tokenId: felt252 = _tokenId.try_into().unwrap();
-            svg.append('<svg height="40" ');
-            svg.append('width="30" xmlns="http://');
-            svg.append('www.w3.org/2000/svg">');
-            svg.append('<text x="5" y="30" fill="none" ');
-            svg.append('stroke="red" font-size="35">');
-            svg.append(_tokenId);
-            svg.append('</text> </svg>');
-    
-            svg
-        }
-    
-    
-        //assert
-        // check admin permission 
-        fn _assert_admin(self: @ContractState) {
-            assert(
-                get_caller_address() == self._felt252ToAddress(ADMIN_ADDRESS), 'Caller not admin'
-            )
-        }
-        // check mintable
-        fn _assert_mintable(self: @ContractState, max_token_id: u256) {
-            assert(max_token_id <= MAX_SUPPLY, 'Out of collection size');
-        }
-    
         ////////////////////////////////
         // internal function to check if a token exists
         ////////////////////////////////
@@ -697,7 +603,7 @@ mod CCNFTS {
             // check that owner of token is not zero
             self.ownerOf(token_id).is_non_zero()
         }
-    
+
         ////////////////////////////////
         // _is_approved_or_owner checks if an address is an approved spender or owner
         ////////////////////////////////
@@ -709,7 +615,7 @@ mod CCNFTS {
                 || self.isApprovedForAll(owner, spender)
                 || self.getApproved(token_id) == spender
         }
-    
+
         ////////////////////////////////
         // internal function that performs the transfer logic
         ////////////////////////////////
@@ -720,34 +626,30 @@ mod CCNFTS {
             assert(from == self.ownerOf(token_id), 'ERC721: Caller is not owner');
             // check that to address is not zero
             assert(to.is_non_zero(), 'ERC721: transfer to 0 address');
-    
-            // remove previously made approvals
-            self.token_approvals.write(token_id, Zeroable::zero());
-    
+
+            // todo zero address error 
+            // let addressZero: ContractAddress = zero();
+            // // remove previously made approvals
+            // self.token_approvals.write(token_id, from);
+
             // increase balance of to address, decrease balance of from address
             self.balances.write(from, self.balances.read(from) - 1);
             self.balances.write(to, self.balances.read(to) + 1);
-    
-            // update token_id owner
             self.owners.write(token_id, to);
-    
-            // emit the Transfer event
             self.emit(Transfer { from: from, to: to, token_id: token_id });
         }
-    
-        // safe mint - Optimize airdrop fees
+
         fn _safe_mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
-            // Update token_id owner
             self.owners.write(token_id, to);
-    
-            // emit Transfer event
-            self.emit(Transfer { from: Zeroable::zero(), to: to, token_id: token_id });
+            // todo zero address error . 
+            // let addressZero: ContractAddress = zero();
+            // self.emit(Transfer { from: addressZero, to: to, token_id: token_id });
         }
     }
-    
+
     #[generate_trait]
     impl BaseHelperImpl of BaseHelperTrait {
-        // convert int short string .  eg: 1 -> 0x31 
+        // convert int short string .  eg: 1 -> 0x31
         fn _intToChar(self: @ContractState, input: u256) -> felt252 {
             if input == 0 {
                 return 0x30;
@@ -772,17 +674,9 @@ mod CCNFTS {
             }
             0x0
         }
-    
+
         fn _felt252ToAddress(self: @ContractState, input: felt252) -> ContractAddress {
             input.try_into().unwrap()
         }
     }
-    
-    #[external(v0)]
-    #[generate_trait]
-    impl ContractImpl of ContractTrait {
-        fn versionCode(self: @ContractState) -> u256 {
-            VERSION_CODE
-        }
-    }
-    }
+}
