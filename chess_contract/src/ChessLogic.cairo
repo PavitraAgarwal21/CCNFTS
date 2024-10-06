@@ -25,7 +25,7 @@ pub fn calculate_move_enoded(_depth: u256, _move: u256, _bestMove: u256) -> u256
 //    with proper trait implementations.        //
 //                                              //
 //////////////////////////////////////////////////
-#[derive(Drop)]
+#[derive(Drop, Debug)]
 pub struct ArrayStack {
     main_stack: Array<u256>,
     aux_stack: Array<u256>,
@@ -83,6 +83,28 @@ fn newAS() -> ArrayStack {
 //                                              //
 //////////////////////////////////////////////////
 
+/// @notice Searches for the ``best'' move.
+/// @dev The ply depth must be at least 3 because game ending scenarios are determined lazily.
+/// This is because {generateMoves} generates pseudolegal moves. Consider the following:
+///     1. In the case of white checkmates black, depth 2 is necessary:
+///         * Depth 1: This is the move black plays after considering depth 2.
+///         * Depth 2: Check whether white captures black's king within 1 turn for every such
+///           move. If so, white has checkmated black.
+///     2. In the case of black checkmates white, depth 3 is necessary:
+///         * Depth 1: This is the move black plays after considering depths 2 and 3.
+///         * Depth 2: Generate all pseudolegal moves for white in response to black's move.
+///         * Depth 3: Check whether black captures white's king within 1 turn for every such
+///         * move. If so, black has checkmated white.
+/// The minimum depth required to cover all the cases above is 3. For simplicity, stalemates
+/// are treated as checkmates.
+///
+/// The function returns 0 if the game is over after white's move (no collision with any
+/// potentially real moves because 0 is not a valid index), and returns true if the game is over
+/// after black's move.
+/// @param _board The board position to analyze.
+/// @param _depth The ply depth to analyze to. Must be at least 3.
+/// @return The best move for the player (denoted by the last bit in `_board`).
+/// @return Whether white is checkmated or not.
 pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
     let mut moves = generateMoves(_board);
     if (get(@moves, 0) == 0) {
@@ -114,7 +136,15 @@ pub fn searchMove(_board: u256, _depth: u256) -> (u256, bool) {
     return (bestMove, bestScore > 1_260);
 }
 
-
+/// @notice Searches and evaluates moves using a variant of the negamax search algorithm.
+/// @dev For efficiency, the function evaluates how good moves are and sums them up, rather than
+/// evaluating entire board positions. Thus, the only pruning the algorithm performs is when a
+/// king is captured. If a king is captured, it always returns -4,000, which is the king's value
+/// because there is nothing more to consider.
+/// @param _board The board position to analyze.
+/// @param _depth The ply depth to analyze to.
+/// @return The cumulative score searched to a ply depth of `_depth`, assuming each side picks
+/// their best moves.
 pub fn negMax(_board: u256, _depth: u256) -> i128 {
     if (_depth == 0) {
         return 0;
@@ -149,7 +179,45 @@ pub fn negMax(_board: u256, _depth: u256) -> i128 {
     }
 }
 
-
+/// @notice Uses piece-square tables (PSTs) to evaluate how ``good'' a move is.
+/// @dev The PSTs were selected semi-arbitrarily with chess strategies in mind (e.g. pawns are
+/// good in the center). Updating them changes the way the engine ``thinks.'' Each piece's PST
+/// is bitpacked into as few uint256s as possible for efficiency (see {Engine-getPst} and
+/// {Engine-getPstTwo}):
+///          Pawn                Bishop               Knight                   Rook
+///    20 20 20 20 20 20    62 64 64 64 64 62    54 56 54 54 56 58    100 100 100 100 100 100
+///    30 30 30 30 30 30    64 66 66 66 66 64    56 60 64 64 60 56    101 102 102 102 102 101
+///    20 22 24 24 22 20    64 67 68 68 67 64    58 64 68 68 64 58     99 100 100 100 100  99
+///    21 20 26 26 20 21    64 68 68 68 68 64    58 65 68 68 65 58     99 100 100 100 100  99
+///    21 30 16 16 30 21    64 67 66 66 67 64    56 60 65 65 60 56     99 100 100 100 100  99
+///    20 20 20 20 20 20    62 64 64 64 64 62    54 56 58 58 56 54    100 100 101 101 100 100
+///                            Queen                         King
+///                   176 178 179 179 178 176    3994 3992 3990 3990 3992 3994
+///                   178 180 180 180 180 178    3994 3992 3990 3990 3992 3994
+///                   179 180 181 181 180 179    3996 3994 3992 3992 3994 3995
+///                   179 181 181 181 180 179    3998 3996 3996 3996 3996 3998
+///                   178 180 181 180 180 178    4001 4001 4000 4000 4001 4001
+///                   176 178 179 179 178 176    4004 4006 4002 4002 4006 4004
+/// All entries in the figure above are in decimal representation.
+///
+/// Each entry in the pawn's, bishop's, knight's, and rook's PSTs uses 7 bits, and each entry in
+/// the queen's and king's PSTs uses 12 bits. Additionally, each piece is valued as following:
+///                                      | Type   | Value |
+///                                      | ------ | ----- |
+///                                      | Pawn   | 20    |
+///                                      | Bishop | 66    |
+///                                      | Knight | 64    |
+///                                      | Rook   | 100   |
+///                                      | Queen  | 180   |
+///                                      | King   | 4000  |
+/// The king's value just has to be sufficiently larger than 180 * 7 = 1260 (i.e. equivalent to
+/// 7 queens) because check/checkmates are detected lazily (see {Engine-generateMoves}).
+///
+/// The evaluation of a move is given by
+///                Δ(PST value of the moved piece) + (PST value of any captured pieces).
+/// @param _board The board to apply the move to.
+/// @param _move The move to evaluate.
+/// @return The evaluation of the move applied to the given position.
 fn evaluateMove(_board: u256, _move: u256) -> i128 {
     let fromIndex: u256 = 6 * (U256BitShift::shr(_move, 9))
         + ((U256BitShift::shr(_move, 6)) & 7)
@@ -277,7 +345,13 @@ fn evaluateMove(_board: u256, _move: u256) -> i128 {
     let computed_i128: i128 = captureValueI + newPstI - oldPstI;
     return computed_i128;
 }
-
+/// @notice Maps a given piece type to its PST (see {Engine-evaluateMove} for details on the
+/// PSTs and {Chess} for piece representation).
+/// @dev The queen's and king's PSTs do not fit in 1 uint256, so their PSTs are split into 2
+/// uint256s each. {Chess-getPst} contains the first half, and {Chess-getPstTwo} contains the
+/// second half.
+/// @param _type A piece type defined in {Chess}.
+/// @return The PST corresponding to `_type`.
 fn getPst(_type: u256) -> u256 {
     if (_type == 1) {
         return 0x2850A142850F1E3C78F1E2858C182C50A943468A152A788103C54A142850A14;
@@ -296,7 +370,10 @@ fn getPst(_type: u256) -> u256 {
     }
     return 0xF9AF98F96F96F98F9AF9AF98F96F96F98F9AF9CF9AF98F98F9AF9B;
 }
-
+/// @notice Maps a queen or king to the second half of its PST (see {Engine-getPst}).
+/// @param _type A piece type defined in {Chess}. Must be a queen or a king (see
+/// {Engine-getPst}).
+/// @return The PST corresponding to `_type`.
 fn getPstTwo(_type: u256) -> u256 {
     if (_type == 5) {
         return 0xB30B50B50B50B40B30B20B40B50B40B40B20B00B20B30B30B20B0;
@@ -313,6 +390,59 @@ fn getPstTwo(_type: u256) -> u256 {
 //    and application logic for a chess game.   //
 //                                              //
 //////////////////////////////////////////////////
+
+/// ======================================Piece Representation======================================
+/// Each chess piece is defined with 4 bits as follows:
+///     * The first bit denotes the color (0 means black; 1 means white).
+///     * The last 3 bits denote the type:
+///         | Bits | # | Type   |
+///         | ---- | - | ------ |
+///         | 000  | 0 | Empty  |
+///         | 001  | 1 | Pawn   |
+///         | 010  | 2 | Bishop |
+///         | 011  | 3 | Rook   |
+///         | 100  | 4 | Knight |
+///         | 101  | 5 | Queen  |
+///         | 110  | 6 | King   |
+/// ======================================Board Representation======================================
+/// The board is an 8x8 representation of a 6x6 chess board. For efficiency, all information is
+/// bitpacked into a single u256. Thus, unlike typical implementations, board positions are
+/// accessed via bit shifts and bit masks, as opposed to array accesses. Since each piece is 4 bits,
+/// there are 64 ``indices'' to access:
+///                                     63 62 61 60 59 58 57 56
+///                                     55 54 53 52 51 50 49 48
+///                                     47 46 45 44 43 42 41 40
+///                                     39 38 37 36 35 34 33 32
+///                                     31 30 29 28 27 26 25 24
+///                                     23 22 21 20 19 18 17 16
+///                                     15 14 13 12 11 10 09 08
+///                                     07 06 05 04 03 02 01 00
+/// All numbers in the figure above are in decimal representation.
+/// For example, the piece at index 27 is accessed with ``(board >> (27 << 2)) & 0xF''.
+///
+/// The top/bottom rows and left/right columns are treated as sentinel rows/columns for efficient
+/// boundary validation  i.e., (63, ..., 56),
+/// (07, ..., 00), (63, ..., 07), and (56, ..., 00) never contain pieces. Every bit in those rows
+/// and columns should be ignored, except for the last bit. The last bit denotes whose turn it is to
+/// play (0 means black's turn; 1 means white's turn). e.g. a potential starting position:
+///                                Black
+///                       00 00 00 00 00 00 00 00                    Black
+///                       00 03 02 05 06 02 03 00                 ♜ ♝ ♛ ♚ ♝ ♜
+///                       00 01 01 01 01 01 01 00                 ♟ ♟ ♟ ♟ ♟ ♟
+///                       00 00 00 00 00 00 00 00     denotes
+///                       00 00 00 00 00 00 00 00    the board
+///                       00 09 09 09 09 09 09 00                 ♙ ♙ ♙ ♙ ♙ ♙
+///                       00 11 12 13 14 12 11 00                 ♖ ♘ ♕ ♔ ♘ ♖
+///                       00 00 00 00 00 00 00 01                    White
+///                                White
+/// All numbers in the example above are in decimal representation.
+/// ======================================Move Representation=======================================
+/// Each move is allocated 12 bits. The first 6 bits are the index the piece is moving from, and the
+/// last 6 bits are the index the piece is moving to. Since the index representing a square is at
+/// most 54, 6 bits sufficiently represents any index (0b111111 = 63 > 54). e.g. 1243 denotes a move
+/// from index 19 to 27 (1243 = (19 << 6) | 27).
+///
+/// Since the board is represented by a u256, consider including ``using Chess for u256''.
 
 /// @notice Takes in a board position, and applies the move `_move` to it.
 /// @dev After applying the move, the board's perspective is updated (so that NEXT PLAYER CAN PLAY
@@ -341,7 +471,6 @@ pub fn applyMove(mut _board: u256, _move: u256) -> u256 {
 /// @dev  Since the last bit exchanges positions with the 4th bit, changes the player .
 /// @param _board The board  to reverse .
 /// @return _board reversed.
-
 pub fn rotate(mut _board: u256) -> u256 {
     let mut rotatedBoard: u256 = 0;
     let mut i: u256 = 0;
@@ -356,6 +485,30 @@ pub fn rotate(mut _board: u256) -> u256 {
     rotatedBoard
 }
 
+/// Maps an index relative to the 6x6 board to the index relative to the 8x8
+/// representation.
+/// The indices are mapped as follows:
+///                           35 34 33 32 31 30              54 53 52 51 50 49
+///                           29 28 27 26 25 24              46 45 44 43 42 41
+///                           23 22 21 20 19 18    mapped    38 37 36 35 34 33
+///                           17 16 15 14 13 12      to      30 29 28 27 26 25
+///                           11 10 09 08 07 06              22 21 20 19 18 17
+///                           05 04 03 02 01 00              14 13 12 11 10 09
+/// All numbers in the figure above are in decimal representation. The bits are bitpacked into a
+/// uint256 (i.e. ``0xDB5D33CB1BADB2BAA99A59238A179D71B69959551349138D30B289 = 54 << (6 * 35) |
+/// ... | 9 << (6 * 0)'') for efficiency.
+/// Index relative to the 6x6 board.
+/// Index relative to the 8x8 representation.
+/// Appends a move to a {Chess-MovesArray} object.
+/// Since each uint256 fits at most 21 moves
+/// bitpacks 21 moves per uint256 before moving on to the next uint256.
+
+/// @notice Generates all possible  moves for a given position and color.
+/// @dev The last bit denotes which color to generate the moves for .
+///  All moves are expressed in code as shifts respective to the board's 8x8 representation .
+/// @param _board The board position to generate moves for.
+/// @return ArrayStack of all possible moves. not more then the 105 moves as 105 * 12 bits = 1260
+/// and  256 bits * 5 = 1280
 pub fn generateMoves(_board: u256) -> ArrayStack { // done and checked 
     let mut movesArray = MoveArray { index: 0, items: newAS(), };
     append(ref movesArray.items, 0);
@@ -364,6 +517,8 @@ pub fn generateMoves(_board: u256) -> ArrayStack { // done and checked
     append(ref movesArray.items, 0);
     append(ref movesArray.items, 0);
     let mut move: u256 = 0;
+    // `0xDB5D33CB1BADB2BAA99A59238A179D71B69959551349138D30B289` is a mapping of indices
+    // relative to the 6x6 board to indices relative to the 8x8 representation
     let mut index: u256 = 0xDB5D33CB1BADB2BAA99A59238A179D71B69959551349138D30B289;
     loop {
         if index == 0 {
@@ -374,17 +529,14 @@ pub fn generateMoves(_board: u256) -> ArrayStack { // done and checked
             _board, U256BitShift::shl(adjustedIndex, 2)
         );
         let mut piece = adjustedBoard & 0xF;
-
-        //    println!("last bit of the board {}",U256BitShift::shr(piece,3));
-        //    println!("last {} ", _board& 1);
-        // if the piece is empty or the piece is not the same as the current player
+        // Skip if square is empty or not the color of the board the function call is analyzing.
         if (piece == 0 || U256BitShift::shr(piece, 3) != _board & 1) {
             index = U256BitShift::shr(index, 6);
             continue;
         }
-        /// remove the player bit  0111 &
+        // remove the player bit  0111 &
         piece = piece & 0x7;
-        ///// means it is pawn
+        // means it is pawn
         if (piece == 1) {
             /// if the front row is empty or not
             if (U256BitShift::shr(adjustedBoard, 0x20) & 0xF == 0) {
@@ -509,6 +661,11 @@ pub fn generateMoves(_board: u256) -> ArrayStack { // done and checked
     return movesArray.items;
 }
 
+/// @notice Determines whether a move is a legal move or not (includes checking whether king is
+/// checked or not after the move).
+/// @param _board The board to analyze.
+/// @param _move The move to check.
+/// @return Whether the move is legal or not.
 pub fn isLegalMove(_board: u256, _move: u256) -> bool {
     let fromIndex: u256 = U256BitShift::shr(_move, 6);
     let toIndex: u256 = _move & 0x3F;
@@ -586,13 +743,21 @@ pub fn isLegalMove(_board: u256, _move: u256) -> bool {
             return false;
         }
     }
-    // if (negMax(applyMove(_board,_move),1) < -1_260) {
-    //     return false;
-    // }
+    if (negMax(applyMove(_board, _move), 1) < -1_260) {
+        return false;
+    }
     return true;
 }
 
-
+/// @notice Determines whether there is a clear path along a direction vector from one index to
+/// another index on the board.
+/// @dev The board's representation essentially flattens it from 2D to 1D, so `_directionVector`
+/// should be the change in index that represents the direction vector.
+/// @param _board The board to analyze.
+/// @param _fromIndex The index of the starting piece.
+/// @param _toIndex The index of the ending piece.
+/// @param _directionVector The direction vector of the ray.
+/// @return Whether there is a clear path between `_fromIndex` and `_toIndex` or not.
 pub fn searchRay(_board: u256, _fromIndex: u256, _toIndex: u256, _directionVector: u256) -> bool {
     let mut indexChange: u256 = 0;
     let mut rayStart: u256 = 0;
@@ -634,7 +799,10 @@ pub fn searchRay(_board: u256, _fromIndex: u256, _toIndex: u256, _directionVecto
     return rayStart == rayEnd;
 }
 
-
+/// @notice Determines whether a move results in a capture or not.
+/// @param _board The board prior to the potential capture.
+/// @param _indexAdjustedBoard The board bitshifted to the to index to consider.
+/// @return Whether the move is a capture or not.
 pub fn isCapture(_board: u256, _indexAdjustedBoard: u256) -> bool {
     /// exp the square you want to caputure is not empty and the piece is not the same as the
     /// current player
@@ -642,7 +810,28 @@ pub fn isCapture(_board: u256, _indexAdjustedBoard: u256) -> bool {
         && (U256BitShift::shr(_indexAdjustedBoard & 0xF, 3) != _board & 1));
 }
 
-
+/// @notice Determines whether a move is valid or not (i.e. within bounds and not capturing
+/// same colored piece).
+/// @dev As mentioned above, the board representation has 2 sentinel rows and columns for
+/// efficient boundary validation as follows:
+///                                           0 0 0 0 0 0 0 0
+///                                           0 1 1 1 1 1 1 0
+///                                           0 1 1 1 1 1 1 0
+///                                           0 1 1 1 1 1 1 0
+///                                           0 1 1 1 1 1 1 0
+///                                           0 1 1 1 1 1 1 0
+///                                           0 1 1 1 1 1 1 0
+///                                           0 0 0 0 0 0 0 0,
+/// where 1 means a piece is within the board, and 0 means the piece is out of bounds. The bits
+/// are bitpacked into a uint256 (i.e. ``0x7E7E7E7E7E7E00 = 0 << 63 | ... | 0 << 0'') for
+/// efficiency.
+///
+/// Moves that overflow the uint256 are computed correctly because bitshifting more than bits
+/// available results in 0. However, moves that underflow the uint256 (i.e. applying the move
+/// results in a negative index) must be checked beforehand.
+/// @param _board The board on which to consider whether the move is valid.
+/// @param _toIndex The to index of the move.
+/// @return Whether the move is valid or not.
 pub fn isValid(_board: u256, _toIndex: u256) -> bool {
     return (((U256BitShift::shr(0x7E7E7E7E7E7E00, _toIndex)
         & 1) == 1) // move must be with in the bounds 
@@ -655,7 +844,11 @@ pub fn isValid(_board: u256, _toIndex: u256) -> bool {
                 ));
 }
 
-// here append to index is changed to and tested more
+
+/// @param _movesArray {Chess-MovesArray} object to append the new move to.
+/// @param _fromMoveIndex Index the piece moves from.
+/// @param _toMoveIndex Index the piece moves to.
+
 pub fn appendTo(ref _moveArray: MoveArray, _fromMoveIndex: u256, _toMoveIndex: u256) -> bool {
     let mut currentIndex = _moveArray.index;
     let mut currentPartition = get(@_moveArray.items, currentIndex);
@@ -699,5 +892,9 @@ mod tests {
         let new_board = applyMove(_board, 1373);
         let new_board_as = 0x100000000BCE0CB00090000000D9999000001000010000100326523000000000;
         assert(new_board == new_board_as, 'not applied properly');
+    }
+    #[test]
+    fn test_generateMoves() {
+        let mut _board = 0x3256230010000100001000009199D00009009000BC0ECB000000001;
     }
 }
